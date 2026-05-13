@@ -5,8 +5,9 @@ import fit.iuh.kh3tshopbe.dto.request.ProductRequest;
 
 import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.dto.response.ProductResponse;
-
 import fit.iuh.kh3tshopbe.dto.response.TopProductResponse;
+import fit.iuh.kh3tshopbe.entities.Product;
+import fit.iuh.kh3tshopbe.service.ProductCacheService;
 import fit.iuh.kh3tshopbe.service.ProductService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ProductController {
+    ProductCacheService productCacheService; // Đổi từ ProductService sang ProductCacheService
     ProductService productService;
 
     @GetMapping
-    public ApiResponse<List<ProductResponse>> getAllProducts() {
-        ApiResponse<List<ProductResponse>> response = new ApiResponse<>();
-        response.setResult(productService.getAllProducts());
+    public ApiResponse<List<Product>> getAllProducts() { // Đổi kiểu trả về để khớp với CacheService
+        ApiResponse<List<Product>> response = new ApiResponse<>();
+        response.setResult(productCacheService.getAllProducts());
         return response;
     }
 

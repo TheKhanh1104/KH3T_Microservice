@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.iuh.kh3tshopbe.enums.Role;
 import fit.iuh.kh3tshopbe.enums.StatusLogin;
 import jakarta.persistence.*;
@@ -41,18 +42,21 @@ public class Account {
     @Column(name = "status_login")
     StatusLogin statusLogin;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account")
     @ToString.Exclude
     private List<Address> addresses;
 
-
+    @JsonIgnore
     @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
     private Cart cart;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<WishList> wishLists;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<Order> orders;

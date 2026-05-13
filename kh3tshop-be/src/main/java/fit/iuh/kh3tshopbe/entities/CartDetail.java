@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,6 +36,7 @@ public class CartDetail {
     private Date updateAt;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id")
+    @JsonIgnore
     private Cart cart;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")

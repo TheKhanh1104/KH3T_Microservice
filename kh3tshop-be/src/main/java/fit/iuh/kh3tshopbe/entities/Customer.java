@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.iuh.kh3tshopbe.enums.Gender;
 import fit.iuh.kh3tshopbe.enums.Status;
 import jakarta.persistence.*;
@@ -44,5 +45,6 @@ public class Customer {
 
     @OneToOne(mappedBy = "customer")
     @ToString.Exclude
+    @JsonIgnore
     private Account account;
 }

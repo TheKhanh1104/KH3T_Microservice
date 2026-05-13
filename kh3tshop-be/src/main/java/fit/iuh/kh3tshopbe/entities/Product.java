@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.iuh.kh3tshopbe.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
@@ -73,15 +74,20 @@ public class Product {
 
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     private List<WishListDetail> details;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     private List<CartDetail> cartDetails;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<SizeDetail> sizeDetails;
 }

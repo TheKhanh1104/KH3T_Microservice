@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  redis:
+    image: "redis:alpine"
+    container_name: kh3t-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    # Tùy chọn: Để lưu dữ liệu Redis ngay cả khi container bị xóa và tạo lại
+    # volumes:
+    #   - redis-data:/data
+
+# Tùy chọn: Định nghĩa volume để lưu trữ dữ liệu
+# volumes:
+#   redis-data:

@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.iuh.kh3tshopbe.enums.PaymentMethod;
 import fit.iuh.kh3tshopbe.enums.StatusOrdering;
 import jakarta.persistence.*;
@@ -40,6 +41,7 @@ public class Order {
     @JoinColumn(name = "customer_trading_id")
     private CustomerTrading customerTrading;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
 

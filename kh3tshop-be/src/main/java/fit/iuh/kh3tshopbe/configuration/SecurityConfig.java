@@ -35,8 +35,11 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(request -> request
-                    // 1. CHO PHÉP GIAO DIỆN (FRONTEND) - THÊM MỚI
-                    .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.js", "/*.css", "/*.png", "/*.ico").permitAll()
+                    // 1. CHO PHÉP GIAO DIỆN (FRONTEND) - THÊM MỚI (Cho phép cả các client-side routes của React Router để khi reload F5 không bị chặn)
+                    .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.js", "/*.css", "/*.png", "/*.ico",
+                            "/product", "/product/**", "/about", "/policy", "/compare", "/wishlists", "/wishlists/**",
+                            "/cart", "/checkout", "/payment", "/profile", "/login", "/register", "/forget_password", "/reset_password",
+                            "/admin", "/admin/**", "/staff/**").permitAll()
                     
                     // 2. CÁC API KHÔNG CẦN LOGIN
                     .requestMatchers(HttpMethod.POST, "/api/v1/payment/sepay-callback").permitAll()

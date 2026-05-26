@@ -137,7 +137,7 @@ const Register = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/accounts", {
+      const response = await fetch("/api/accounts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

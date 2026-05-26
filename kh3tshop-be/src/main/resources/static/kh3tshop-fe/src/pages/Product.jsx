@@ -64,7 +64,7 @@ const Product = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:8080/products");
+        const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
           setProducts(data.result || []);
@@ -82,7 +82,7 @@ const Product = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:8080/categories");
+        const response = await fetch("/api/categories");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.result || []);

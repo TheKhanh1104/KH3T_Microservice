@@ -27,7 +27,7 @@ export default function Orders() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8080/orders");
+      const res = await fetch("/api/orders");
       if (!res.ok) {
         alert("Cannot load orders");
         return;
@@ -111,7 +111,7 @@ export default function Orders() {
   const handleCreateInvoice = async (orderId) => {
     const token = localStorage.getItem("accessToken");
 
-    const res = await fetch("http://localhost:8080/invoices", {
+    const res = await fetch("/api/invoices", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,7 +154,7 @@ export default function Orders() {
 
     // 1) Cập nhật trạng thái đơn hàng
     const statusRes = await fetch(
-      `http://localhost:8080/orders/status/${orderId}`,
+      `/api/orders/status/${orderId}`,
       {
         method: "PUT",
         headers: {
@@ -174,7 +174,7 @@ export default function Orders() {
     // 2) 👉 Gửi email thông báo cho khách hàng
     try {
       await fetch(
-        `http://localhost:8080/customers/email/notification/${order.account.id}/${orderId}`,
+        `/api/customers/email/notification/${order.account.id}/${orderId}`,
         {
           method: "POST",
           headers: {

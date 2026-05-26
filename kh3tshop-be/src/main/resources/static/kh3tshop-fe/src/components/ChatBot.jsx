@@ -65,7 +65,7 @@ const ChatBot = () => {
   try {
     const token = localStorage.getItem("accessToken");
 
-    const res = await fetch("http://localhost:8080/chat/ask", {
+    const res = await fetch("/api/chat/ask", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

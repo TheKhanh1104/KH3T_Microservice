@@ -9,7 +9,7 @@ import Contact from '../components/Contact';
 // Ideal API endpoint: /products/batch?ids=10,12,15
 const fetchProductsByIds = async (ids) => {
     // Đây là nơi bạn gọi API của mình. Ví dụ:
-    const response = await fetch(`http://localhost:8080/products/batch?ids=${ids.join(',')}`);
+    const response = await fetch(`/api/products/batch?ids=${ids.join(',')}`);
     const data = await response.json();
     return data.result;
 

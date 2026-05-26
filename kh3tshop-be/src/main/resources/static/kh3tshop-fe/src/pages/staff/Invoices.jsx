@@ -19,7 +19,7 @@ export default function Invoices() {
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8080/invoices");
+      const res = await fetch("/api/invoices");
       if (!res.ok) {
         alert("Cannot load invoices");
         return;

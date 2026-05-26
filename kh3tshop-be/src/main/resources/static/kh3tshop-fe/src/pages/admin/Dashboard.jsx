@@ -26,7 +26,7 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8080/orders/daily?start=${dateRange.start}&end=${dateRange.end}`,
+          `/api/orders/daily?start=${dateRange.start}&end=${dateRange.end}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -47,7 +47,7 @@ const Dashboard = () => {
   // -------------------------
   const fetchTimeSlotData = async () => {
     try {
-      const res = await fetch("http://localhost:8080/orders/time-slots", {
+      const res = await fetch("/api/orders/time-slots", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTimeSlotData(await res.json());
@@ -58,7 +58,7 @@ const Dashboard = () => {
 
   const fetchDetailedOrders = async () => {
     try {
-      const res = await fetch("http://localhost:8080/orders/detailed-orders", {
+      const res = await fetch("/api/orders/detailed-orders", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDetailedOrders(await res.json());
@@ -69,7 +69,7 @@ const Dashboard = () => {
 
   const fetchRegionData = async () => {
     try {
-      const res = await fetch("http://localhost:8080/customer-trading/regions", {
+      const res = await fetch("/api/customer-trading/regions", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRegionData(await res.json());
@@ -80,7 +80,7 @@ const Dashboard = () => {
 
   const fetchPaymentData = async () => {
     try {
-      const res = await fetch("http://localhost:8080/invoices/payment", {
+      const res = await fetch("/api/invoices/payment", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPaymentData(await res.json());

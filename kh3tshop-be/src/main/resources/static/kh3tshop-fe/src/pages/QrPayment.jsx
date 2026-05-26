@@ -20,7 +20,7 @@ const QrPayment = () => {
   const handleFetchInvoiceById = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`http://localhost:8080/invoices/${invoiceId}`, {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -30,7 +30,7 @@ const QrPayment = () => {
       console.log("new invoice", invoice);
       if (invoice.paymentStatus === "PAID") {
         clearInterval(interval.current);
-        await fetch(`http://localhost:8080/orders/status/${orderId}`, {
+        await fetch(`/api/orders/status/${orderId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

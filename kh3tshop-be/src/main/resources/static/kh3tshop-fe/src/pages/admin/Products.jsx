@@ -57,7 +57,7 @@ export default function Products({ initialFilter = 'ALL' }) {
 
   const loadProducts = async () => {
     try {
-      const res = await fetch("http://localhost:8080/products");
+      const res = await fetch("/api/products");
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setProducts(data?.result || []);
@@ -68,7 +68,7 @@ export default function Products({ initialFilter = 'ALL' }) {
 
   const loadCategories = async () => {
     try {
-      const res = await fetch("http://localhost:8080/categories");
+      const res = await fetch("/api/categories");
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setCategories(data?.result || []);
@@ -179,8 +179,8 @@ export default function Products({ initialFilter = 'ALL' }) {
     // 2. Chuẩn bị URL và Method
     const method = editingProduct ? "PUT" : "POST";
     const url = editingProduct
-      ? `http://localhost:8080/products/${editingProduct.id}`
-      : "http://localhost:8080/products";
+      ? `/api/products/${editingProduct.id}`
+      : "/api/products";
 
     // 3. Xử lý Category Request
     // Tìm object category gốc từ list 'categories' dựa trên ID đang chọn trong form
@@ -260,7 +260,7 @@ export default function Products({ initialFilter = 'ALL' }) {
   const deleteProduct = async (id) => {
     const token = localStorage.getItem("accessToken");
     if (!window.confirm("Bạn có chắc muốn xóa?")) return;
-    await fetch(`http://localhost:8080/products/${id}`, {
+    await fetch(`/api/products/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

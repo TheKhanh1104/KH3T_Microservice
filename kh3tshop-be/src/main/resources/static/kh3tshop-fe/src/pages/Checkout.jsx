@@ -71,7 +71,7 @@ const Checkout = () => {
     const fetchAddresses = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await fetch(`http://localhost:8080/addresses/${userId}`, {
+        const res = await fetch(`/api/addresses/${userId}`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -90,7 +90,7 @@ const Checkout = () => {
   useEffect(() => {
     const handleFetchCustomer = async () => {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`http://localhost:8080/customers/${userId}`, {
+      const res = await fetch(`/api/customers/${userId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -179,7 +179,7 @@ const Checkout = () => {
         }
 
         const res = await fetch(
-          "http://localhost:8080/customer-trading/create",
+          "/api/customer-trading/create",
           {
             method: "POST",
             headers: {
@@ -211,7 +211,7 @@ const Checkout = () => {
           };
         }
 
-        const orderRes = await fetch("http://localhost:8080/orders/create", {
+        const orderRes = await fetch("/api/orders/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -228,7 +228,7 @@ const Checkout = () => {
           toast.success("Đặt hàng thành công!!");
         }
         if (product) {
-          await fetch(`http://localhost:8080/order-details/create`, {
+          await fetch(`/api/order-details/create`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -245,7 +245,7 @@ const Checkout = () => {
           });
         } else {
           for (const item of selectedCartItems) {
-            await fetch(`http://localhost:8080/order-details/create`, {
+            await fetch(`/api/order-details/create`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -271,7 +271,7 @@ const Checkout = () => {
             paymentMethod: "BANK_TRANSFER",
             paymentStatus: "UNPAID",
           };
-          const res = await fetch("http://localhost:8080/invoices", {
+          const res = await fetch("/api/invoices", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -309,7 +309,7 @@ const Checkout = () => {
         delivery_address: finalDeliveryAddress,
         delivery_note: formAddress.delivery_note,
       };
-      const res = await fetch(`http://localhost:8080/addresses/add`, {
+      const res = await fetch(`/api/addresses/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -329,7 +329,7 @@ const Checkout = () => {
         setIsAddAddress(false);
       }
       const resAddress = await fetch(
-        `http://localhost:8080/addresses/${userId}`,
+        `/api/addresses/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",

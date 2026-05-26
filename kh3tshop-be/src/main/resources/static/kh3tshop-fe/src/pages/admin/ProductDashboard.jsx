@@ -67,7 +67,7 @@ const ProductDashboard = ({ onNavigate }) => {
   // --- API CALLS ---
   const getCategoryRevenue = async () => {
     try {
-      const response = await fetch("http://localhost:8080/categories/category-revenue", {
+      const response = await fetch("/api/categories/category-revenue", {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -95,7 +95,7 @@ const ProductDashboard = ({ onNavigate }) => {
 
   const fetchTopProducts = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/products/top-trending?type=${type}`);
+      const res = await fetch(`/api/products/top-trending?type=${type}`);
       const data = await res.json();
       setTopProducts(data);
     } catch (error) {
@@ -105,7 +105,7 @@ const ProductDashboard = ({ onNavigate }) => {
 
   const fetchSetData = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/products/stats`, {
+      const res = await fetch(`/api/products/stats`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
       const data = await res.json();
@@ -121,7 +121,7 @@ const ProductDashboard = ({ onNavigate }) => {
 
   const fetchProfit = async (filter) => {
     try {
-      const res = await fetch(`http://localhost:8080/invoices/${filter}`);
+      const res = await fetch(`/api/invoices/${filter}`);
       const data = await res.json();
 
       const mapDayToEN = (dayEn) => {

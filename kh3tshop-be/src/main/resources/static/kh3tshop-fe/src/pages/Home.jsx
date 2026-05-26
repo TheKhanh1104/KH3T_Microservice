@@ -43,7 +43,7 @@ const Home = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("http://localhost:8080/products");
+        const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
           const productList = data.result || [];

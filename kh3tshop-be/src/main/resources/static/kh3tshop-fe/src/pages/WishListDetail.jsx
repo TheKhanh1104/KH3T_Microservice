@@ -6,7 +6,7 @@ import { toast } from "sonner"; // THÊM DÒNG NÀY
 import ProductCard from "../components/ProductCard";
 import ChatBot from "../components/ChatBot"; 
 import Contact from "../components/Contact"; 
-const API_BASE = "http://localhost:8080";
+const API_BASE = "/api";
 
 const api = {
   async request(url, options = {}) {

@@ -51,7 +51,7 @@ export default function Customers() {
       if (statusFilter) params.append("status", statusFilter);
       params.append("role", "USER")
       const res = await fetch(
-        `http://localhost:8080/accounts?${params.toString()}`,
+        `/api/accounts?${params.toString()}`,
         {
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -142,7 +142,7 @@ export default function Customers() {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:8080/accounts/admin/add`, {
+      const res = await fetch(`/api/accounts/admin/add`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -182,7 +182,7 @@ export default function Customers() {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:8080/accounts/admin/update/${editingAccount.id}`, {
+      const res = await fetch(`/api/accounts/admin/update/${editingAccount.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -222,7 +222,7 @@ export default function Customers() {
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:8080/accounts/admin/delete/${account.id}`,
+        `/api/accounts/admin/delete/${account.id}`,
         {
           method: "DELETE",
           headers: {
@@ -256,7 +256,7 @@ export default function Customers() {
 
     try {
       // KHÔNG thêm Content-Type, KHÔNG thêm body
-      const res = await fetch(`http://localhost:8080/customers/email/sale/all`, {
+      const res = await fetch(`/api/customers/email/sale/all`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import WishlistSelectorModal from "./WishListSelector";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = "/api";
 
 const api = {
   async get(url) {

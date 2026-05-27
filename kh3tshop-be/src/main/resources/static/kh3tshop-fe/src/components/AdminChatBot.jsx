@@ -56,7 +56,7 @@ useEffect(() => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/admin-chat/ask", {
+      const res = await fetch("/api/admin-chat/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

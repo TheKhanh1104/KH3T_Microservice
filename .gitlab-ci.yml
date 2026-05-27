@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+  - package
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+build_backend:
+  stage: build
+  image: maven:3.9.6-eclipse-temurin-21
+  script:
+    - cd kh3tshop-be
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - kh3tshop-be/target/*.jar
+
+build_frontend:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd kh3tshop-be/src/main/resources/static/kh3tshop-fe
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - kh3tshop-be/src/main/resources/static/kh3tshop-fe/dist/
+
+package_images:
+  stage: package
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker-compose build
+
+deploy_staging:
+  stage: deploy
+  script:
+    - echo "Deploying to staging server..."
+    - docker-compose up -d
+  only:
+    - main

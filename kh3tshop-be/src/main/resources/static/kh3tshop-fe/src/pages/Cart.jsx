@@ -58,7 +58,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
 
-            const res = await fetch(`http://localhost:8080/accounts/myinfor`, {
+            const res = await fetch(`/api/accounts/myinfor`, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -80,7 +80,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `http://localhost:8080/carts/account/${user.id}`,
+                `/api/carts/account/${user.id}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -106,7 +106,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `http://localhost:8080/cart-details/cart/${cart.id}`,
+                `/api/cart-details/cart/${cart.id}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -138,7 +138,7 @@ const Cart = () => {
 
         try {
             const token = localStorage.getItem("accessToken");
-            await fetch(`http://localhost:8080/cart-details/${cartDetailId}/select`, {
+            await fetch(`/api/cart-details/${cartDetailId}/select`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -166,7 +166,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `http://localhost:8080/cart-details/${cartDetailId}/increase-quantity`,
+                `/api/cart-details/${cartDetailId}/increase-quantity`,
                 {
                     method: "PUT",
                     headers: {
@@ -184,7 +184,7 @@ const Cart = () => {
                 )
             );
             const resCart = await fetch(
-                `http://localhost:8080/carts/update/${cart.id}/increase`,
+                `/api/carts/update/${cart.id}/increase`,
                 {
                     method: "PUT",
                     headers: {
@@ -209,7 +209,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `http://localhost:8080/cart-details/${cartDetailId}/decrease-quantity`,
+                `/api/cart-details/${cartDetailId}/decrease-quantity`,
                 {
                     method: "PUT",
                     headers: {
@@ -223,7 +223,7 @@ const Cart = () => {
             if (!data || data.quantity === 0) {
                 setCartItems((prev) => prev.filter((i) => i.id !== cartDetailId));
                 const resCart = await fetch(
-                    `http://localhost:8080/carts/update/${cart.id}/decrease`,
+                    `/api/carts/update/${cart.id}/decrease`,
                     {
                         method: "PUT",
                         headers: {
@@ -246,7 +246,7 @@ const Cart = () => {
                 )
             );
             const resCart = await fetch(
-                `http://localhost:8080/carts/update/${cart.id}/decrease`,
+                `/api/carts/update/${cart.id}/decrease`,
                 {
                     method: "PUT",
                     headers: {
@@ -271,7 +271,7 @@ const Cart = () => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `http://localhost:8080/cart-details/delete/${cartDetailId}`,
+                `/api/cart-details/delete/${cartDetailId}`,
                 {
                     method: "DELETE",
                     headers: {
@@ -284,7 +284,7 @@ const Cart = () => {
             if (res.ok) {
                 setCartItems(cartItems.filter((item) => item.id !== cartDetailId));
                 const resCart = await fetch(
-                    `http://localhost:8080/carts/update/${cart.id}/delete`,
+                    `/api/carts/update/${cart.id}/delete`,
                     {
                         method: "PUT",
                         headers: {

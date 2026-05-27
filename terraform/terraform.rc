@@ -1,0 +1,9 @@
+provider_installation {
+  filesystem_mirror {
+    path    = "C:/Users/thanh/Desktop/ThietkeHeThong/DoAn/terraform/local_mirror"
+    include = ["registry.terraform.io/kreuzwerker/docker"]
+  }
+  direct {
+    exclude = ["registry.terraform.io/kreuzwerker/docker"]
+  }
+}

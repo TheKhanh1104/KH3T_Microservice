@@ -67,7 +67,7 @@ export default function Header() {
     try {
       const token = localStorage.getItem("accessToken");
 
-      const res = await fetch(`http://localhost:8080/accounts/myinfor`, {
+      const res = await fetch(`/api/accounts/myinfor`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -89,7 +89,7 @@ export default function Header() {
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `http://localhost:8080/carts/account/${user.id}`,
+        `/api/carts/account/${user.id}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -148,7 +148,7 @@ export default function Header() {
 
       setIsSearching(true);
       try {
-        const response = await fetch(`http://localhost:8080/products`);
+        const response = await fetch(`/api/products`);
         if (response.ok) {
           const data = await response.json();
           const filtered = (data.result || [])

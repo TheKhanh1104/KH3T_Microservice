@@ -154,7 +154,7 @@ const ProductDetail = () => {
     try {
       const token = localStorage.getItem("accessToken");
 
-      const res = await fetch(`http://localhost:8080/accounts/myinfor`, {
+      const res = await fetch(`/api/accounts/myinfor`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -179,7 +179,7 @@ const ProductDetail = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `http://localhost:8080/carts/account/${user.id}`,
+        `/api/carts/account/${user.id}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -205,7 +205,7 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8080/products/${id}`);
+        const response = await fetch(`/api/products/${id}`);
         if (response.ok) {
           const data = await response.json();
           // Dữ liệu SoldQuantity được lấy trực tiếp từ data.result (ProductResponse)
@@ -226,7 +226,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchOtherProducts = async () => {
       try {
-        const response = await fetch("http://localhost:8080/products");
+        const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
           let products = data.result || [];
@@ -294,7 +294,7 @@ const ProductDetail = () => {
 
         // **GIẢI QUYẾT CONFLICT:** Giữ lại logic tìm sizeDetailId chi tiết từ nhánh khác
         const resSize = await fetch(
-          `http://localhost:8080/sizes/${selectedSize}`, // Giả định selectedSize là tên (S, M, L, XL)
+          `/api/sizes/${selectedSize}`, // Giả định selectedSize là tên (S, M, L, XL)
           {
             headers: {
               "Content-Type": "application/json",
@@ -306,7 +306,7 @@ const ProductDetail = () => {
         const sizeIdToFind = size.id;
         const productIdToFind = parseInt(id);
         const resSizeDatail = await fetch(
-          `http://localhost:8080/size-details/find?productId=${productIdToFind}&sizeId=${sizeIdToFind}`,
+          `/api/size-details/find?productId=${productIdToFind}&sizeId=${sizeIdToFind}`,
           {
             method: "GET",
             headers: {
@@ -329,7 +329,7 @@ const ProductDetail = () => {
       };
 
       const res = await fetch(
-        `http://localhost:8080/cart-details/add-to-cart`,
+        `/api/cart-details/add-to-cart`,
         {
           method: "POST",
           headers: {
@@ -347,7 +347,7 @@ const ProductDetail = () => {
       };
 
       const resCart = await fetch(
-        `http://localhost:8080/carts/update/${cart.id}`,
+        `/api/carts/update/${cart.id}`,
         {
           method: "PUT",
           headers: {

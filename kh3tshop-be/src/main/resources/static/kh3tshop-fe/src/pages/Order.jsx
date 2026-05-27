@@ -24,7 +24,7 @@ const Order = () => {
       const token = localStorage.getItem("accessToken");
 
       const res = await fetch(
-        `http://localhost:8080/orders/account/${userId}`,
+        `/api/orders/account/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -146,7 +146,7 @@ const Order = () => {
                 try {
                   const token = localStorage.getItem("accessToken");
 
-                  await fetch(`http://localhost:8080/orders/status/${id}`, {
+                  await fetch(`/api/orders/status/${id}`, {
                     method: "PUT",
                     headers: {
                       "Content-Type": "application/json",

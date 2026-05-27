@@ -54,7 +54,7 @@ export default function Employees() {
       if (statusFilter) params.append("status", statusFilter);
       params.append("role", "STAFF")
       const res = await fetch(
-        `http://localhost:8080/accounts?${params.toString()}`,
+        `/api/accounts?${params.toString()}`,
         {
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -145,7 +145,7 @@ export default function Employees() {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:8080/accounts/admin/add`, {
+      const res = await fetch(`/api/accounts/admin/add`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -185,7 +185,7 @@ export default function Employees() {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:8080/accounts/admin/update/${editingAccount.id}`, {
+      const res = await fetch(`/api/accounts/admin/update/${editingAccount.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -225,7 +225,7 @@ export default function Employees() {
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:8080/accounts/admin/delete/${account.id}`,
+        `/api/accounts/admin/delete/${account.id}`,
         {
           method: "DELETE",
           headers: {
@@ -266,7 +266,7 @@ export default function Employees() {
 
       console.log("Meeting Request:", meetingData);
 
-      const res = await fetch("http://localhost:8080/accounts/meetings/create", {
+      const res = await fetch("/api/accounts/meetings/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: kh3t-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: identity-service
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/auth/**, /api/accounts/**, /api/customers/**, /api/addresses/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: catalog-service
+          uri: lb://catalog-service
+          predicates:
+            - Path=/api/products/**, /api/categories/**, /api/sizes/**, /api/sizedetails/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**, /api/invoices/**, /api/sepay/**, /api/customertradings/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**, /api/chats/**, /api/admin-chats/**, /api/revenue-forecast/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true

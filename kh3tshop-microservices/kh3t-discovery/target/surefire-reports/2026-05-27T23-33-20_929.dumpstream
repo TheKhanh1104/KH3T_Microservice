@@ -1,0 +1,5 @@
+# Created at 2026-05-27T23:33:21.128
+Boot Manifest-JAR contains absolute paths in classpath 'D:\PhamV.Hinh\HocKi2_2025-2026\KienTrucPhanMem\KH3T_Microservice\kh3tshop-microservices\kh3t-discovery\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

@@ -21,12 +21,12 @@ build_frontend:
   stage: build
   image: node:20-alpine
   script:
-    - cd kh3tshop-be/src/main/resources/static/kh3tshop-fe
+    - cd kh3tshop-fe
     - npm install
     - npm run build
   artifacts:
     paths:
-      - kh3tshop-be/src/main/resources/static/kh3tshop-fe/dist/
+      - kh3tshop-fe/dist/
 
 package_images:
   stage: package

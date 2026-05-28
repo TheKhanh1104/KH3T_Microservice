@@ -1,5 +1,6 @@
 fit\iuh\kh3tshopbe\repository\SizeRepository.class
 fit\iuh\kh3tshopbe\service\CategoryService.class
+fit\iuh\kh3tshopbe\service\command\ProductCommandService.class
 fit\iuh\kh3tshopbe\dto\request\CategoryRequest$CategoryRequestBuilder.class
 fit\iuh\kh3tshopbe\dto\response\ProductResponse$SizeDetailResponse.class
 fit\iuh\kh3tshopbe\dto\request\SizeRequest.class
@@ -30,6 +31,7 @@ fit\iuh\kh3tshopbe\mapper\SizeDetailMapper.class
 fit\iuh\kh3tshopbe\repository\CategoryRepository.class
 fit\iuh\kh3tshopbe\repository\ProductRepository.class
 fit\iuh\kh3tshopbe\CatalogApplication.class
+fit\iuh\kh3tshopbe\service\query\ProductQueryService.class
 fit\iuh\kh3tshopbe\dto\response\CategoryRevenueResponse.class
 fit\iuh\kh3tshopbe\entities\Size.class
 fit\iuh\kh3tshopbe\entities\SizeDetail.class

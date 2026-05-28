@@ -54,4 +54,4 @@ eureka:
 
 security:
   jwt:
-    secret: changeme
+    secret: c8e09fddda9e192d16c485affabc61c9f4bca77a60c19d448f3a6e8475b9f0a4e0d1f69bca8d21f1123b8f0f8a0b8d12

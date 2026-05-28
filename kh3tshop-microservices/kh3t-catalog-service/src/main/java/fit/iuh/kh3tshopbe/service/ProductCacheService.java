@@ -53,4 +53,8 @@ public class ProductCacheService {
         System.out.println("Product cache refreshed and stored in Redis: " + products.size() + " items");
         return products;
     }
+
+    public void evictProductsCache() {
+        redisTemplate.delete(CACHE_KEY);
+    }
 }

@@ -7,8 +7,8 @@ import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.dto.response.ProductResponse;
 import fit.iuh.kh3tshopbe.dto.response.TopProductResponse;
 import fit.iuh.kh3tshopbe.entities.Product;
-import fit.iuh.kh3tshopbe.service.ProductCacheService;
-import fit.iuh.kh3tshopbe.service.ProductService;
+import fit.iuh.kh3tshopbe.service.command.ProductCommandService;
+import fit.iuh.kh3tshopbe.service.query.ProductQueryService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,13 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ProductController {
-    ProductCacheService productCacheService; // Đổi từ ProductService sang ProductCacheService
-    ProductService productService;
+    ProductQueryService productQueryService;
+    ProductCommandService productCommandService;
 
     @GetMapping
     public ApiResponse<List<Product>> getAllProducts() { // Đổi kiểu trả về để khớp với CacheService
         ApiResponse<List<Product>> response = new ApiResponse<>();
-        response.setResult(productCacheService.getAllProducts());
+        response.setResult(productQueryService.getAllProducts());
         return response;
     }
 
@@ -41,7 +41,7 @@ public class ProductController {
     @GetMapping("/{id}")
     public ApiResponse<ProductResponse> getProductById(@PathVariable int id) {
         ApiResponse<ProductResponse> response = new ApiResponse<>();
-        response.setResult(productService.getProductById(id));
+        response.setResult(productQueryService.getProductById(id));
         return response;
     }
     @GetMapping("/batch")
@@ -55,28 +55,25 @@ public class ProductController {
         }
 
         // Gọi tầng Service để lấy danh sách sản phẩm
-        response.setResult(productService.getProductsByIds(ids));
+        response.setResult(productQueryService.getProductsByIds(ids));
         return response;
     }
     @PostMapping
     public ApiResponse<ProductResponse> createProduct(@RequestBody ProductRequest productRequest) {
-//        ApiResponse<ProductResponse> response = new ApiResponse<>();
-//        response.setResult(productService.createProduct(productRequest));
-//        return response;
         ApiResponse<ProductResponse> response = new ApiResponse<>();
-        response.setResult(productService.createProduct(productRequest));
+        response.setResult(productCommandService.createProduct(productRequest));
         return response;
     }
 
     @PutMapping("/{id}")
     public ApiResponse<ProductResponse> updateProduct(@PathVariable int id, @RequestBody ProductRequest productRequest) {
         ApiResponse<ProductResponse> response = new ApiResponse<>();
-        response.setResult(productService.updateProduct(id, productRequest));
+        response.setResult(productCommandService.updateProduct(id, productRequest));
         return response;
     }
     @DeleteMapping("/{id}")
     public ApiResponse<String> deleteProduct(@PathVariable int id) {
-        productService.deleteProduct(id);
+        productCommandService.deleteProduct(id);
         ApiResponse<String> response = new ApiResponse<>();
         response.setResult("Product deleted successfully");
         return response;
@@ -86,13 +83,13 @@ public class ProductController {
     @GetMapping("/top-trending")
     public List<TopProductResponse> getTopTrending(
             @RequestParam(defaultValue = "week") String type) {
-        return productService.getTopTrending(type);
+        return productQueryService.getTopTrending(type);
     }
 
     @GetMapping("/stats")
     public ApiResponse<?> getStats() {
         return ApiResponse.<Object>builder()
-                .result(productService.getDashboardStats())
+            .result(productQueryService.getDashboardStats())
                 .build();
     }
 

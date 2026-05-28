@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 
 
+import java.util.Optional;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Integer> {
@@ -24,5 +25,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             "LEFT JOIN FETCH sd.size " +
             "LEFT JOIN FETCH p.category")
     List<Product> findAllWithDetails();
+
+        @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.sizeDetails sd " +
+            "LEFT JOIN FETCH sd.size " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.id = :id")
+        Optional<Product> findByIdWithDetails(@Param("id") int id);
 
 }

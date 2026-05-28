@@ -6,6 +6,7 @@ import fit.iuh.kh3tshopbe.dto.ResetPassword.ForgotPasswordRequest;
 import fit.iuh.kh3tshopbe.dto.ResetPassword.ResetPasswordRequest;
 import fit.iuh.kh3tshopbe.dto.request.AuthenticationRequest;
 import fit.iuh.kh3tshopbe.dto.request.IntrospectRequest;
+import fit.iuh.kh3tshopbe.dto.request.RefreshRequest;
 import fit.iuh.kh3tshopbe.dto.response.AccountResponse;
 import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.dto.response.AuthenticationResponse;
@@ -59,6 +60,12 @@ public class AuthenticationController {
         return ApiResponse.<IntrospectResponse>builder()
                 .result(result)
                 .build();
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshRequest request) {
+        var result = authenticationService.refreshTokens(request.getUsername(), request.getRefreshToken());
+        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
     }
 
     @PostMapping("/forgot-password")

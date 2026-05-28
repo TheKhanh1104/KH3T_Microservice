@@ -8,7 +8,8 @@ COPY kh3t-common/src ./kh3t-common/src
 COPY kh3t-gateway/pom.xml ./kh3t-gateway/pom.xml
 COPY kh3t-gateway/src ./kh3t-gateway/src
 
-RUN mvn -q -pl kh3t-gateway -am -DskipTests clean package
+RUN mvn -f kh3t-common/pom.xml -DskipTests install && \
+	mvn -f kh3t-gateway/pom.xml -DskipTests clean package
 
 FROM eclipse-temurin:21-jre
 

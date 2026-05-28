@@ -1,0 +1,94 @@
+version: '3.8'
+services:
+  kh3t-discovery:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-discovery/Dockerfile
+    
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+
+  kh3t-identity-service:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-identity-service/Dockerfile
+    
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_identity?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATA_REDIS_HOST: kh3t-redis
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kh3t-discovery:
+        condition: service_started
+
+  kh3t-catalog-service:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-catalog-service/Dockerfile
+    
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_catalog?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATA_REDIS_HOST: kh3t-redis
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kh3t-discovery:
+        condition: service_started
+
+  kh3t-order-service:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-order-service/Dockerfile
+    
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_order?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATA_REDIS_HOST: kh3t-redis
+      KAFKA_BOOTSTRAP_SERVERS: kh3t-kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      kh3t-discovery:
+        condition: service_started
+
+  kh3t-gateway:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-gateway/Dockerfile
+    
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+    depends_on:
+      kh3t-discovery:
+        condition: service_started
+      kh3t-identity-service:
+        condition: service_started
+
+networks:
+  default:
+    name: kh3t-network
+
+# NOTE: this compose file expects existing infrastructure services defined in docker-compose.yml
+# (kh3t-mysql, kh3t-redis, kh3t-zookeeper, kh3t-kafka). Start with:
+# docker compose -f docker-compose.yml -f docker-compose.services.yml up -d

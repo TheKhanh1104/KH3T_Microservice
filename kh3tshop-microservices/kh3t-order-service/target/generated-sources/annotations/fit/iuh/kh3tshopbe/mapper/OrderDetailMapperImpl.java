@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.4 (Oracle Corporation)"
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class OrderDetailMapperImpl implements OrderDetailMapper {
@@ -23,8 +23,8 @@ public class OrderDetailMapperImpl implements OrderDetailMapper {
         orderDetailResponse.productId( orderDetail.getProductId() );
         orderDetailResponse.productName( orderDetail.getProductName() );
         orderDetailResponse.quantity( orderDetail.getQuantity() );
-        orderDetailResponse.unitPrice( orderDetail.getUnitPrice() );
         orderDetailResponse.totalPrice( orderDetail.getTotalPrice() );
+        orderDetailResponse.unitPrice( orderDetail.getUnitPrice() );
 
         orderDetailResponse.orderId( orderDetail.getOrder() != null ? orderDetail.getOrder().getId() : 0 );
 

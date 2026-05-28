@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.4 (Oracle Corporation)"
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class CustomerMapperImpl implements CustomerMapper {
@@ -88,21 +88,21 @@ public class CustomerMapperImpl implements CustomerMapper {
         CustomerResponse.CustomerResponseBuilder customerResponse = CustomerResponse.builder();
 
         customerResponse.accountId( customerAccountId( customer ) );
-        customerResponse.id( customer.getId() );
-        if ( customer.getFullName() != null ) {
-            customerResponse.fullName( customer.getFullName() );
-        }
-        if ( customer.getPhoneNumber() != null ) {
-            customerResponse.phoneNumber( customer.getPhoneNumber() );
+        if ( customer.getDateOfBirth() != null ) {
+            customerResponse.dateOfBirth( customer.getDateOfBirth() );
         }
         if ( customer.getEmail() != null ) {
             customerResponse.email( customer.getEmail() );
         }
+        if ( customer.getFullName() != null ) {
+            customerResponse.fullName( customer.getFullName() );
+        }
         if ( customer.getGender() != null ) {
             customerResponse.gender( customer.getGender() );
         }
-        if ( customer.getDateOfBirth() != null ) {
-            customerResponse.dateOfBirth( customer.getDateOfBirth() );
+        customerResponse.id( customer.getId() );
+        if ( customer.getPhoneNumber() != null ) {
+            customerResponse.phoneNumber( customer.getPhoneNumber() );
         }
 
         return customerResponse.build();

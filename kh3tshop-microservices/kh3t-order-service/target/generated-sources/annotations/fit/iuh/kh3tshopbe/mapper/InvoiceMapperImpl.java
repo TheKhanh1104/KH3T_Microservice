@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.4 (Oracle Corporation)"
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class InvoiceMapperImpl implements InvoiceMapper {
@@ -28,16 +28,16 @@ public class InvoiceMapperImpl implements InvoiceMapper {
 
         InvoiceResponse.InvoiceResponseBuilder invoiceResponse = InvoiceResponse.builder();
 
+        invoiceResponse.createdAt( invoice.getCreatedAt() );
         invoiceResponse.id( invoice.getId() );
         invoiceResponse.invoiceCode( invoice.getInvoiceCode() );
+        invoiceResponse.order( orderToOrderResponse( invoice.getOrder() ) );
         invoiceResponse.paymentMethod( invoice.getPaymentMethod() );
         invoiceResponse.paymentStatus( invoice.getPaymentStatus() );
         invoiceResponse.subtotalAmount( invoice.getSubtotalAmount() );
         invoiceResponse.taxAmount( invoice.getTaxAmount() );
         invoiceResponse.totalAmount( invoice.getTotalAmount() );
-        invoiceResponse.createdAt( invoice.getCreatedAt() );
         invoiceResponse.updatedAt( invoice.getUpdatedAt() );
-        invoiceResponse.order( orderToOrderResponse( invoice.getOrder() ) );
 
         return invoiceResponse.build();
     }
@@ -50,10 +50,10 @@ public class InvoiceMapperImpl implements InvoiceMapper {
         CustomerTradingResponse.CustomerTradingResponseBuilder customerTradingResponse = CustomerTradingResponse.builder();
 
         customerTradingResponse.id( customerTrading.getId() );
+        customerTradingResponse.receiverAddress( customerTrading.getReceiverAddress() );
+        customerTradingResponse.receiverEmail( customerTrading.getReceiverEmail() );
         customerTradingResponse.receiverName( customerTrading.getReceiverName() );
         customerTradingResponse.receiverPhone( customerTrading.getReceiverPhone() );
-        customerTradingResponse.receiverEmail( customerTrading.getReceiverEmail() );
-        customerTradingResponse.receiverAddress( customerTrading.getReceiverAddress() );
         customerTradingResponse.totalAmount( customerTrading.getTotalAmount() );
 
         return customerTradingResponse.build();
@@ -66,11 +66,11 @@ public class InvoiceMapperImpl implements InvoiceMapper {
 
         OrderDetailResponse.OrderDetailResponseBuilder orderDetailResponse = OrderDetailResponse.builder();
 
+        orderDetailResponse.productId( orderDetail.getProductId() );
         orderDetailResponse.productName( orderDetail.getProductName() );
         orderDetailResponse.quantity( orderDetail.getQuantity() );
-        orderDetailResponse.unitPrice( orderDetail.getUnitPrice() );
         orderDetailResponse.totalPrice( orderDetail.getTotalPrice() );
-        orderDetailResponse.productId( orderDetail.getProductId() );
+        orderDetailResponse.unitPrice( orderDetail.getUnitPrice() );
 
         return orderDetailResponse.build();
     }
@@ -95,14 +95,14 @@ public class InvoiceMapperImpl implements InvoiceMapper {
 
         OrderResponse.OrderResponseBuilder orderResponse = OrderResponse.builder();
 
-        orderResponse.id( order.getId() );
-        orderResponse.orderCode( order.getOrderCode() );
-        orderResponse.note( order.getNote() );
-        orderResponse.orderDate( order.getOrderDate() );
-        orderResponse.statusOrder( order.getStatusOrder() );
         orderResponse.customerTrading( customerTradingToCustomerTradingResponse( order.getCustomerTrading() ) );
-        orderResponse.paymentMethod( order.getPaymentMethod() );
+        orderResponse.id( order.getId() );
+        orderResponse.note( order.getNote() );
+        orderResponse.orderCode( order.getOrderCode() );
+        orderResponse.orderDate( order.getOrderDate() );
         orderResponse.orderDetails( orderDetailListToOrderDetailResponseList( order.getOrderDetails() ) );
+        orderResponse.paymentMethod( order.getPaymentMethod() );
+        orderResponse.statusOrder( order.getStatusOrder() );
 
         return orderResponse.build();
     }

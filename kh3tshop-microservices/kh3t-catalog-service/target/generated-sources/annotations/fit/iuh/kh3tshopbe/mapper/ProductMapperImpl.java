@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.4 (Oracle Corporation)"
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class ProductMapperImpl implements ProductMapper {
@@ -55,21 +55,21 @@ public class ProductMapperImpl implements ProductMapper {
         productResponse.category( categoryToCategoryResponse( product.getCategory() ) );
         productResponse.sizeDetails( sizeDetailListToSizeDetailResponseList( product.getSizeDetails() ) );
         productResponse.status( product.getStatus() );
-        productResponse.id( product.getId() );
-        productResponse.name( product.getName() );
-        productResponse.description( product.getDescription() );
-        productResponse.price( product.getPrice() );
         productResponse.costPrice( product.getCostPrice() );
-        productResponse.unit( product.getUnit() );
-        productResponse.quantity( product.getQuantity() );
-        productResponse.imageUrlFront( product.getImageUrlFront() );
-        productResponse.imageUrlBack( product.getImageUrlBack() );
         productResponse.createdAt( product.getCreatedAt() );
-        productResponse.updatedAt( product.getUpdatedAt() );
-        productResponse.rating( product.getRating() );
+        productResponse.description( product.getDescription() );
         productResponse.discountAmount( product.getDiscountAmount() );
-        productResponse.material( product.getMaterial() );
         productResponse.form( product.getForm() );
+        productResponse.id( product.getId() );
+        productResponse.imageUrlBack( product.getImageUrlBack() );
+        productResponse.imageUrlFront( product.getImageUrlFront() );
+        productResponse.material( product.getMaterial() );
+        productResponse.name( product.getName() );
+        productResponse.price( product.getPrice() );
+        productResponse.quantity( product.getQuantity() );
+        productResponse.rating( product.getRating() );
+        productResponse.unit( product.getUnit() );
+        productResponse.updatedAt( product.getUpdatedAt() );
 
         return productResponse.build();
     }
@@ -81,11 +81,11 @@ public class ProductMapperImpl implements ProductMapper {
 
         Category category = new Category();
 
-        category.setName( categoryRequest.getName() );
-        category.setDescription( categoryRequest.getDescription() );
-        category.setImageUrl( categoryRequest.getImageUrl() );
-        category.setDisplay_order( categoryRequest.getDisplay_order() );
         category.setActive( categoryRequest.isActive() );
+        category.setDescription( categoryRequest.getDescription() );
+        category.setDisplay_order( categoryRequest.getDisplay_order() );
+        category.setImageUrl( categoryRequest.getImageUrl() );
+        category.setName( categoryRequest.getName() );
 
         return category;
     }
@@ -123,8 +123,8 @@ public class ProductMapperImpl implements ProductMapper {
         CategoryResponse.CategoryResponseBuilder categoryResponse = CategoryResponse.builder();
 
         categoryResponse.id( category.getId() );
-        categoryResponse.name( category.getName() );
         categoryResponse.imageUrl( category.getImageUrl() );
+        categoryResponse.name( category.getName() );
 
         return categoryResponse.build();
     }

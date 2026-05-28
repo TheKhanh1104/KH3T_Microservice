@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.4 (Oracle Corporation)"
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class CustomerTradingMapperImpl implements CustomerTradingMapper {
@@ -21,10 +21,10 @@ public class CustomerTradingMapperImpl implements CustomerTradingMapper {
         CustomerTradingResponse.CustomerTradingResponseBuilder customerTradingResponse = CustomerTradingResponse.builder();
 
         customerTradingResponse.id( customerTrading.getId() );
+        customerTradingResponse.receiverAddress( customerTrading.getReceiverAddress() );
+        customerTradingResponse.receiverEmail( customerTrading.getReceiverEmail() );
         customerTradingResponse.receiverName( customerTrading.getReceiverName() );
         customerTradingResponse.receiverPhone( customerTrading.getReceiverPhone() );
-        customerTradingResponse.receiverEmail( customerTrading.getReceiverEmail() );
-        customerTradingResponse.receiverAddress( customerTrading.getReceiverAddress() );
         customerTradingResponse.totalAmount( customerTrading.getTotalAmount() );
 
         return customerTradingResponse.build();

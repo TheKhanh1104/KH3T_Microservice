@@ -238,7 +238,7 @@
                             <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>src/main/resources/static/kh3tshop-fe/dist</directory>
+                                    <directory>../kh3tshop-fe/dist</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>

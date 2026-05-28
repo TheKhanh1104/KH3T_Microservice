@@ -6,3 +6,14 @@ kh3tshop-be/src/main/resources/credentials.json
 *.tfstate
 *.tfstate.*
 *.exe
+
+# Build and IDE artifacts
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.idea/
+.vscode/
+*.iml
+*.log

@@ -21,6 +21,32 @@ services:
     ports:
       - "6379:6379"
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: kh3t-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kh3t-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+
   backend:
     build: ./kh3tshop-be
     container_name: kh3t-backend
@@ -34,9 +60,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      kafka:
+        condition: service_started
 
   frontend:
-    build: ./kh3tshop-be/src/main/resources/static/kh3tshop-fe
+    build: ./kh3tshop-fe
     container_name: kh3t-frontend
     ports:
       - "3000:80"

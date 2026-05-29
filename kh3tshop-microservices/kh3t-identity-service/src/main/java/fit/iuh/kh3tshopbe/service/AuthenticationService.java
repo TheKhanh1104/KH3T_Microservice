@@ -41,17 +41,24 @@ public class AuthenticationService {
     RefreshTokenService refreshTokenService;
     List<AuthenticationPlugin> plugins;
 
-    public IntrospectResponse introspecct(IntrospectRequest request) throws JOSEException, ParseException {
+    public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
 
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-        SignedJWT signedJWT = SignedJWT.parse(token);
-        Date expityTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+            
+            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            var verified = signedJWT.verify(verifier);
 
-        var vertified = signedJWT.verify(verifier);
-        return  IntrospectResponse.builder()
-                .valid(vertified && expityTime.after(new Date()))
-                .build();
+            return IntrospectResponse.builder()
+                    .valid(verified && expiryTime.after(new Date()))
+                    .build();
+        } catch (Exception e) {
+            return IntrospectResponse.builder()
+                    .valid(false)
+                    .build();
+        }
     }
     public AuthenticationResponse authenticate(AuthenticationRequest request){
         String loginType = (request.getLoginType() == null || request.getLoginType().isBlank()) 
@@ -59,8 +66,7 @@ public class AuthenticationService {
         
         // DEBUG: Kiểm tra danh sách plugin tại đây
         if (plugins == null || plugins.isEmpty()) {
-            System.err.println("CRITICAL ERROR: No AuthenticationPlugins found! Check your @Component and @SpringBootApplication scan.");
-            throw new RuntimeException("Hệ thống chưa nạp được Plugin xác thực nào.");
+            throw new RuntimeException("Authentication System Error: No security plugins loaded.");
         }
 
         AuthenticationPlugin plugin = plugins.stream()
@@ -82,7 +88,7 @@ public class AuthenticationService {
             .token(token)
             .refreshToken(refresh)
             .username(user.getUsername())
-            .role(user.getRole().name())
+            .role(user.getRole() != null ? user.getRole().name() : "USER")
             .build();
     }
 
@@ -114,16 +120,17 @@ public class AuthenticationService {
                     .issuer("kh3t-shop")
                     .issueTime(new Date())
                     .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()))
-                    .claim("scope", account.getRole().toString())
+                    .claim("scope", account.getRole() != null ? account.getRole().name() : "USER")
                     .build();
 
             Payload payload = new Payload(claimsSet.toJSONObject());
             JWSObject jwsObject = new JWSObject(header, payload);
 
-            jwsObject.sign(new MACSigner(SIGNER_KEY));
+            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
 
             return jwsObject.serialize();
         } catch (Exception e) {
+            System.err.println("Token Generation Error: " + e.getMessage());
             throw new AppException(ErrorCode.Token_Generation_Failed);
         }
     }

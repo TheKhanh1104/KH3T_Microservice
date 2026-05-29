@@ -23,8 +23,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-
-        // Exclude public endpoints (Kiểm tra cả có và không có tiền tố /api)
+        // Exclude public endpoints
         if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
@@ -57,6 +56,9 @@ public class AuthFilter implements GlobalFilter, Ordered {
                path.contains("/auth/forgot-password") || 
                path.contains("/auth/reset-password") ||
                path.contains("/accounts") ||
+               path.contains("/products") ||
+               path.contains("/categories") ||
+               path.contains("/sizes") ||
                path.contains("/v1/payment");
     }
 

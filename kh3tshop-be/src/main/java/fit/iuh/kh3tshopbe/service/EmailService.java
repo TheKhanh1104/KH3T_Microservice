@@ -64,13 +64,10 @@ public class EmailService {
                 String html = buildSoldOffEmail(products, c);
                 sendHtmlEmail(c.getEmail(), "Sản phẩm hot sale trên website!", html);
 
-                // Log để kiểm tra tiến độ trong console
-                System.out.println("Đang gửi email cho: " + c.getEmail());
             } catch (Exception e) {
                 System.err.println("Lỗi gửi cho " + c.getEmail() + ": " + e.getMessage());
             }
         }
-        System.out.println("=== ĐÃ GỬI XONG TẤT CẢ EMAIL ===");
     }
 
     @Async
@@ -174,12 +171,10 @@ public class EmailService {
         for (Customer e : employees) {
             try {
                 sendMeetingEmail(e.getEmail(), meetLink);
-                System.out.println("Đang gửi email họp cho: " + e.getEmail());
             } catch (Exception ex) {
                 System.err.println("Lỗi gửi cho " + e.getEmail() + ": " + ex.getMessage());
             }
         }
-        System.out.println("=== ĐÃ GỬI XONG EMAIL HỌP ===");
     }
 
 

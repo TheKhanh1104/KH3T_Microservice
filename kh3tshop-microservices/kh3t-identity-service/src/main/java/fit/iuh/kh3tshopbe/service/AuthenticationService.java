@@ -13,8 +13,10 @@ import fit.iuh.kh3tshopbe.entities.Account;
 import fit.iuh.kh3tshopbe.entities.Customer;
 import fit.iuh.kh3tshopbe.exception.AppException;
 import fit.iuh.kh3tshopbe.exception.ErrorCode;
+import fit.iuh.kh3tshopbe.plugin.AuthenticationPlugin;
 import fit.iuh.kh3tshopbe.repository.AccountRepository;
 import fit.iuh.kh3tshopbe.repository.CustomerRepository;
+import java.util.List;
 import java.util.UUID;
 import fit.iuh.kh3tshopbe.service.RefreshTokenService;
 import lombok.AccessLevel;
@@ -37,6 +39,7 @@ public class AuthenticationService {
     JwtService jwtService;
     CustomerRepository customerRepository;
     RefreshTokenService refreshTokenService;
+    List<AuthenticationPlugin> plugins;
 
     public IntrospectResponse introspecct(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
@@ -51,21 +54,35 @@ public class AuthenticationService {
                 .build();
     }
     public AuthenticationResponse authenticate(AuthenticationRequest request){
-        var user = accountRepository.findByUsername(request.getUsername()).orElseThrow(
-                () -> new AppException(ErrorCode.User_Not_Authenticated)
-        );
-        boolean authenticated =  passwordEncoder.matches(request.getPassword(), user.getPassword());
-
-        if(!authenticated){
-            throw new AppException(ErrorCode.Password_Failed);
+        String loginType = (request.getLoginType() == null || request.getLoginType().isBlank()) 
+                           ? "PASSWORD" : request.getLoginType().trim().toUpperCase();
+        
+        // DEBUG: Kiểm tra danh sách plugin tại đây
+        if (plugins == null || plugins.isEmpty()) {
+            System.err.println("CRITICAL ERROR: No AuthenticationPlugins found! Check your @Component and @SpringBootApplication scan.");
+            throw new RuntimeException("Hệ thống chưa nạp được Plugin xác thực nào.");
         }
+
+        AuthenticationPlugin plugin = plugins.stream()
+                .filter(p -> p.supports(loginType))
+                .findFirst()
+                .orElseThrow(() -> {
+                    System.err.println("No plugin found for loginType: " + loginType);
+                    return new AppException(ErrorCode.User_Not_Authenticated);
+                });
+
+        Account user = plugin.authenticate(request);
+
         var token = generationToken(user);
         var refresh = UUID.randomUUID().toString();
         refreshTokenService.storeRefreshToken(user.getUsername(), refresh);
+
         return AuthenticationResponse.builder()
             .isAuthenticated(true)
             .token(token)
             .refreshToken(refresh)
+            .username(user.getUsername())
+            .role(user.getRole().name())
             .build();
     }
 

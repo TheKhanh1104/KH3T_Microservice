@@ -23,7 +23,7 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                dir('kh3tshop-be/src/main/resources/static/kh3tshop-fe') {
+                dir('kh3tshop-fe') {
                     sh 'npm install'
                     sh 'npm run build'
                 }

@@ -2,16 +2,21 @@ FROM maven:3.9.9-eclipse-temurin-17 AS build
 
 WORKDIR /workspace
 
+# when build context is the microservices root, copy module sources explicitly
 COPY pom.xml .
-COPY src ./src
+COPY kh3t-common/pom.xml ./kh3t-common/pom.xml
+COPY kh3t-common/src ./kh3t-common/src
+COPY kh3t-discovery/pom.xml ./kh3t-discovery/pom.xml
+COPY kh3t-discovery/src ./kh3t-discovery/src
 
-RUN mvn -q -DskipTests clean package
+RUN mvn -f kh3t-common/pom.xml -DskipTests install && \
+	mvn -f kh3t-discovery/pom.xml -DskipTests clean package
 
 FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY --from=build /workspace/target/kh3t-discovery-0.0.1-SNAPSHOT.jar /app/kh3t-discovery.jar
+COPY --from=build /workspace/kh3t-discovery/target/kh3t-discovery-0.0.1-SNAPSHOT.jar /app/kh3t-discovery.jar
 
 EXPOSE 8761
 

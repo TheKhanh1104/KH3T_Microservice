@@ -24,8 +24,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
       kh3t-discovery:
         condition: service_started
 
@@ -41,12 +39,10 @@ services:
       SPRING_DATA_REDIS_HOST: kh3t-redis
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      kh3t-discovery:
-        condition: service_started
+        mysql:
+          condition: service_healthy
+        kh3t-discovery:
+          condition: service_started
 
   kh3t-order-service:
     build:
@@ -58,17 +54,12 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_order?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATA_REDIS_HOST: kh3t-redis
-      KAFKA_BOOTSTRAP_SERVERS: kh3t-kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      kafka:
-        condition: service_started
-      kh3t-discovery:
-        condition: service_started
+        mysql:
+          condition: service_healthy
+        kh3t-discovery:
+          condition: service_started
 
   kh3t-ai-service:
     build:

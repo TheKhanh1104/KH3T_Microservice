@@ -11,4 +11,6 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationRequest {
     String username;
     String password;
+    String loginType; // PASSWORD, GOOGLE, etc.
 }
+

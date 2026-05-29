@@ -18,6 +18,8 @@ public enum ErrorCode {
     Password_Failed(1004, "Password failed", HttpStatus.BAD_REQUEST),
     User_Not_Authorized(1007, "User not authorized", HttpStatus.UNAUTHORIZED),
     INVALID_TOKEN(1008,"Toke is not available" , HttpStatus.BAD_REQUEST),
+    INVALID_OTP(1009, "Invalid OTP", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(1010, "OTP has expired", HttpStatus.BAD_REQUEST),
     CUSTOMER_NOT_FOUND(2001, "Customer not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(3001, "Category not found", HttpStatus.NOT_FOUND),
     PRODUCT_NOT_FOUND(3000,"Product not found" , HttpStatus.NOT_FOUND),

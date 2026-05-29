@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
@@ -23,7 +25,18 @@ public class CartService {
     }
 
     public Cart getCartByAccountId(int accountId) {
-        return cartRepository.findByAccountId(accountId);
+        Cart cart = cartRepository.findByAccountId(accountId);
+        if (cart == null) {
+            // Tao moi gio hang neu chua co de tranh loi 500
+            cart = new Cart();
+            cart.setAccountId(accountId);
+            cart.setTotalQuantity(0);
+            cart.setTotalAmount(0.0);
+            cart.setCreated_at(new Date());
+            cart.setUpdated_at(new Date());
+            return cartRepository.save(cart);
+        }
+        return cart;
     }
 
     public CartResponse updateCart(int cartId, CartRequest cartRequest) {

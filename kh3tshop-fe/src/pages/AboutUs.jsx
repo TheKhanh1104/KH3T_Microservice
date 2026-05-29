@@ -62,7 +62,7 @@ const About = () => {
                         KH3T
                     </h1>
                     <p className="text-xl text-muted-foreground mt-4 max-w-4xl mx-auto leading-relaxed">
-                        KH3TKH3T Studio – a youthful, free-spirited, and bold local brand
+                        KH3T Studio – a youthful, free-spirited, and bold local brand
                         inspiring you to express your individuality through creative
                         designs. Choose KH3T to “live your truth” and define your own style!
                     </p>

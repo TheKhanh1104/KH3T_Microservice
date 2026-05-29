@@ -7,34 +7,22 @@ import fit.iuh.kh3tshopbe.dto.ResetPassword.ResetPasswordRequest;
 import fit.iuh.kh3tshopbe.dto.request.AuthenticationRequest;
 import fit.iuh.kh3tshopbe.dto.request.IntrospectRequest;
 import fit.iuh.kh3tshopbe.dto.request.RefreshRequest;
-import fit.iuh.kh3tshopbe.dto.response.AccountResponse;
 import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.dto.response.AuthenticationResponse;
 import fit.iuh.kh3tshopbe.dto.response.IntrospectResponse;
 import fit.iuh.kh3tshopbe.entities.Account;
-import fit.iuh.kh3tshopbe.entities.Customer;
 import fit.iuh.kh3tshopbe.exception.AppException;
 import fit.iuh.kh3tshopbe.exception.ErrorCode;
-import fit.iuh.kh3tshopbe.repository.AccountRepository;
-import fit.iuh.kh3tshopbe.repository.CustomerRepository;
 import fit.iuh.kh3tshopbe.service.AccountService;
 import fit.iuh.kh3tshopbe.service.AuthenticationService;
 import fit.iuh.kh3tshopbe.service.EmailService;
-import fit.iuh.kh3tshopbe.service.JwtService;
-
-import io.jsonwebtoken.ExpiredJwtException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
+import java.util.Date;
 import java.util.Random;
 
 @RestController
@@ -46,6 +34,7 @@ public class AuthenticationController {
     AccountService accountService;
     JwtUtil jwtUtil;
     EmailService emailService;
+
     @PostMapping("/login")
     public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest request){
         var result = authenticationService.authenticate(request);
@@ -56,7 +45,7 @@ public class AuthenticationController {
 
     @PostMapping("/introspect")
     public ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
-        var result = authenticationService.introspecct(request);
+        var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
                 .result(result)
                 .build();
@@ -69,60 +58,53 @@ public class AuthenticationController {
     }
 
     @PostMapping("/forgot-password")
-    public ApiResponse<ResetPasswordRequest> forgotPassword(@RequestBody ForgotPasswordRequest forgotPasswordRequest) {
-        ResetPasswordRequest resetPasswordRequest = new ResetPasswordRequest();
+    public ApiResponse<String> forgotPassword(@RequestBody ForgotPasswordRequest forgotPasswordRequest) {
         Account account = accountService.findAccountByCustomerEmail(forgotPasswordRequest.getEmail());
         if (account == null) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
 
-        // Tạo OTP 6 số
         String otp = String.format("%06d", new Random().nextInt(999999));
-        String token = jwtUtil.generateResetToken(forgotPasswordRequest.getEmail());
-        resetPasswordRequest.setToken(token);
-        resetPasswordRequest.setOtp(otp);
-        resetPasswordRequest.setNewPassword("");
-        // Gửi email
+        
+        account.setOtpCode(otp);
+        account.setOtpExpiry(new Date(System.currentTimeMillis() + 5 * 60 * 1000));
+        accountService.saveAccount(account);
+
         emailService.sendSimpleEmail(
                 forgotPasswordRequest.getEmail(),
                 "Reset Password OTP",
-                "Your verification code is: " + otp
+                "Your verification code is: " + otp + ". It will expire in 5 minutes."
         );
-        return ApiResponse.<ResetPasswordRequest>builder()
-                .result(resetPasswordRequest)
+        
+        return ApiResponse.<String>builder()
+                .result("OTP has been sent to your email.")
                 .build();
     }
 
-
-
     @PostMapping("/reset-password")
     public ApiResponse<String> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
-        try {
-            String email = jwtUtil.extractEmail(resetPasswordRequest.getToken());
-
-            Account account = accountService.findAccountByCustomerEmail(email);
-            if (account == null) {
-                return ApiResponse.<String>builder()
-                        .result("Invalid token!")
-                        .build();
-            }
-
-            // encode password
-            account.setPassword(new BCryptPasswordEncoder().encode(resetPasswordRequest.getNewPassword()));
-            accountService.saveAccount(account);
-
-            return ApiResponse.<String>builder()
-                    .result("Password has been reset successfully.")
-                    .build();
-        } catch (ExpiredJwtException ex) {
-            return ApiResponse.<String>builder()
-                    .result("Token has expired!")
-                    .build();
-        } catch (Exception ex) {
-            return ApiResponse.<String>builder()
-                    .result("An error occurred while resetting the password.")
-                    .build();
+        Account account = accountService.findAccountByCustomerEmail(resetPasswordRequest.getEmail());
+        if (account == null) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
-    }
 
+        if (account.getOtpCode() == null || !account.getOtpCode().equals(resetPasswordRequest.getOtp())) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        if (account.getOtpExpiry() == null || account.getOtpExpiry().before(new Date())) {
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        account.setPassword(accountService.encodePassword(resetPasswordRequest.getNewPassword()));
+        account.setOtpCode(null);
+        account.setOtpExpiry(null);
+        
+        accountService.saveAccount(account);
+
+        return ApiResponse.<String>builder()
+                .code(1000)
+                .result("Password has been reset successfully.")
+                .build();
+    }
 }

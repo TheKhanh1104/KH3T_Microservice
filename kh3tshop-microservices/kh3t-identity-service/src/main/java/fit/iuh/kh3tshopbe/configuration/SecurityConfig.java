@@ -63,7 +63,11 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                             .decoder(jwtDecoder())
                             .jwtAuthenticationConverter(jwtAuthenticationConverter())
                     )
-                    .authenticationEntryPoint(new AuthenticationEntryPoint())
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.setStatus(401);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"code\":1005,\"message\":\"User not authenticated (Security Layer)\"}");
+                    })
             );
 
     return http.build();

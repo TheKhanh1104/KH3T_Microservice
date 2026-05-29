@@ -27,7 +27,6 @@ public class CustomerService {
     CustomerRepository customerRepository;
     CustomerMapper customerMapper;
     public Customer saveCustomer(CustomerRequest customerRequest){
-        System.out.println("Saving customer: " + customerRequest.getFullName());
         Customer customer = customerMapper.toCustomer(customerRequest);
         customer.setCreateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));
         customer.setUpdateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));

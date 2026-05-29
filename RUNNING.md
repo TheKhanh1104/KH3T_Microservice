@@ -46,7 +46,7 @@ Example (discovery):
 ## Recommended start order
 1. Infrastructure (Docker): MySQL, Redis, Zookeeper, Kafka (if using Docker Compose)
 2. `kh3t-discovery` (Eureka)
-3. Backends: `kh3t-identity-service`, `kh3t-catalog-service`, `kh3t-order-service`
+3. Backends: `kh3t-identity-service`, `kh3t-catalog-service`, `kh3t-order-service`, `kh3t-ai-service`
 4. `kh3t-gateway` (last)
 
 ## Ports (default)
@@ -55,6 +55,7 @@ Example (discovery):
 - Identity: http://localhost:8081
 - Catalog: http://localhost:8082
 - Order: http://localhost:8083
+- AI service: http://localhost:8084
 - Kafka: 9092
 - Redis: 6379
 - MySQL: 3306

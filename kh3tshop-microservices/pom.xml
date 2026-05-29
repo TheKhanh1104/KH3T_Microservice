@@ -22,9 +22,7 @@
         <module>kh3t-identity-service</module>
         <module>kh3t-catalog-service</module>
         <module>kh3t-order-service</module>
-        <!--
         <module>kh3t-ai-service</module>
-        -->
     </modules>
 
     <properties>

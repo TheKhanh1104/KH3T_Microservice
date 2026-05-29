@@ -70,6 +70,27 @@ services:
       kh3t-discovery:
         condition: service_started
 
+  kh3t-ai-service:
+    build:
+      context: ./kh3tshop-microservices
+      dockerfile: kh3t-ai-service/Dockerfile
+
+    ports:
+      - "8084:8084"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+      CATALOG_SERVICE_URL: http://kh3t-catalog-service:8082
+      ORDER_SERVICE_URL: http://kh3t-order-service:8083
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_BASE_URL: https://generativelanguage.googleapis.com
+    depends_on:
+      kh3t-discovery:
+        condition: service_started
+      kh3t-catalog-service:
+        condition: service_started
+      kh3t-order-service:
+        condition: service_started
+
   kh3t-gateway:
     build:
       context: ./kh3tshop-microservices

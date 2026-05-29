@@ -30,7 +30,6 @@ public class ProductCacheService {
         // Thử lấy từ cache trước
         Object cachedData = redisTemplate.opsForValue().get(CACHE_KEY);
         if (cachedData != null) {
-            System.out.println("Cache Hit for key: " + CACHE_KEY); // Thêm log tại đây
             // Chuyển đổi từ object (thường là LinkedHashMap) sang List<Product>
             try {
                 return objectMapper.convertValue(cachedData, new TypeReference<List<Product>>() {});
@@ -46,11 +45,9 @@ public class ProductCacheService {
     }
 
     public synchronized List<Product> refreshCache() {
-        System.out.println("Refreshing product cache from DB...");
         List<Product> products = productRepository.findAllWithDetails(); // JOIN FETCH
         // Lưu vào Redis với thời gian sống (TTL)
         redisTemplate.opsForValue().set(CACHE_KEY, products, CACHE_TTL, TimeUnit.MINUTES);
-        System.out.println("Product cache refreshed and stored in Redis: " + products.size() + " items");
         return products;
     }
 

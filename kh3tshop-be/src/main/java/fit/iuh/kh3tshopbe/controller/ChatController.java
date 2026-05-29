@@ -152,8 +152,6 @@ public class ChatController {
     // ================== HÀM MỚI: PHÁT HIỆN YÊU CẦU SO SÁNH & TRẢ VỀ DANH SÁCH ID ==================
     private List<Long> detectCompareRequest(String userPrompt, String botReply) {
         String text = (userPrompt + " " + botReply).toLowerCase();
-        System.out.println("=== [COMPARE DETECT] Bắt đầu kiểm tra yêu cầu so sánh ===");
-        System.out.println("Text kết hợp (user + bot): " + text);
 
         // Từ khóa tiếng Việt phổ biến khi muốn so sánh
         boolean isCompareIntent = text.contains("so sánh") ||
@@ -166,15 +164,13 @@ public class ChatController {
                 text.contains("vs với") ||
                 text.contains("so với") ||
                 (text.contains("trong 2 cái") && (text.contains("trong hai cái") || text.contains("so kè") || text.contains("phân tích")));
-        System.out.println("Có từ khóa so sánh không? → " + isCompareIntent);
+        
         if (!isCompareIntent){
-            System.out.println("→ Không phát hiện ý định so sánh → trả về null");
             return null;
         }
 
         List<Product> allProducts = productCacheService.getAllProducts();
         Set<Long> mentionedIds = new HashSet<>();
-        System.out.println("Danh sách sản phẩm đang kiểm tra (" + allProducts.size() + " món):");
 
         for (Product p : allProducts) {
             String name = p.getName().toLowerCase();

@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "fit.iuh.kh3tshopbe")
 @EnableDiscoveryClient
 @EnableAsync
 public class IdentityServiceApplication {

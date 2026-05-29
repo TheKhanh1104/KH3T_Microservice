@@ -58,7 +58,6 @@ public class SePayService {
         }
         invoice.setPaymentStatus(StatusPayment.PAID);
         invoiceRepository.save(invoice);
-        System.out.println(invoice);
 
         return new SePayResponse(true, "Payment processed successfully");
     }

@@ -102,26 +102,22 @@ public class AuthenticationController {
 
             Account account = accountService.findAccountByCustomerEmail(email);
             if (account == null) {
-                return ApiResponse.<String>builder()
-                        .result("Invalid token!")
-                        .build();
+                throw new AppException(ErrorCode.USER_NOT_FOUND);
             }
 
-            // encode password
-            account.setPassword(new BCryptPasswordEncoder().encode(resetPasswordRequest.getNewPassword()));
+            account.setPassword(accountService.encodePassword(resetPasswordRequest.getNewPassword()));
             accountService.saveAccount(account);
 
             return ApiResponse.<String>builder()
+                    .code(1000)
                     .result("Password has been reset successfully.")
                     .build();
         } catch (ExpiredJwtException ex) {
-            return ApiResponse.<String>builder()
-                    .result("Token has expired!")
-                    .build();
+            throw new AppException(ErrorCode.INVALID_TOKEN);
+        } catch (AppException ex) {
+            throw ex;
         } catch (Exception ex) {
-            return ApiResponse.<String>builder()
-                    .result("An error occurred while resetting the password.")
-                    .build();
+            throw new RuntimeException("An error occurred while resetting the password.");
         }
     }
 

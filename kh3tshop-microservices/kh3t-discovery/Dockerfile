@@ -1,4 +1,4 @@
-FROM maven:3.9.9-eclipse-temurin-17 AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
 
@@ -9,10 +9,11 @@ COPY kh3t-common/src ./kh3t-common/src
 COPY kh3t-discovery/pom.xml ./kh3t-discovery/pom.xml
 COPY kh3t-discovery/src ./kh3t-discovery/src
 
-RUN mvn -f kh3t-common/pom.xml -DskipTests install && \
+RUN mvn -N -f pom.xml install && \
+	mvn -f kh3t-common/pom.xml -DskipTests install && \
 	mvn -f kh3t-discovery/pom.xml -DskipTests clean package
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 

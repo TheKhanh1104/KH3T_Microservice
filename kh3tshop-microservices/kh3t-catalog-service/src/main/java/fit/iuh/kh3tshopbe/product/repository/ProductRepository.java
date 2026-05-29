@@ -1,0 +1,37 @@
+package fit.iuh.kh3tshopbe.product.repository;
+
+import fit.iuh.kh3tshopbe.shared.entity.Product;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * [MODULE: product] — Repository cho Product entity.
+ * Tách ra khỏi package gốc, thuộc module product.
+ */
+public interface ProductRepository extends JpaRepository<Product, Integer> {
+
+    List<Product> findByDiscountAmountGreaterThan(Double amount);
+
+    @Query("SELECT COUNT(p) FROM Product p")
+    long getTotalProducts();
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.quantity <= :threshold")
+    long getLowStockProducts(@Param("threshold") int threshold);
+
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.sizeDetails sd " +
+            "LEFT JOIN FETCH sd.size " +
+            "LEFT JOIN FETCH p.category")
+    List<Product> findAllWithDetails();
+
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.sizeDetails sd " +
+            "LEFT JOIN FETCH sd.size " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.id = :id")
+    Optional<Product> findByIdWithDetails(@Param("id") int id);
+}

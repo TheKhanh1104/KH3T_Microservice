@@ -6,7 +6,8 @@ COPY pom.xml .
 COPY kh3t-ai-service/pom.xml ./kh3t-ai-service/pom.xml
 COPY kh3t-ai-service/src ./kh3t-ai-service/src
 
-RUN mvn -f kh3t-ai-service/pom.xml -DskipTests clean package
+RUN mvn -N -f pom.xml install && \
+	mvn -f kh3t-ai-service/pom.xml -DskipTests clean package
 
 FROM eclipse-temurin:21-jre
 

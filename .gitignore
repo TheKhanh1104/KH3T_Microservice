@@ -6,3 +6,13 @@ kh3tshop-be/src/main/resources/credentials.json
 *.tfstate
 *.tfstate.*
 *.exe
+
+# Java build artifacts
+**/target/
+**/*.class
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.DS_Store

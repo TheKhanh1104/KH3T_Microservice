@@ -67,7 +67,8 @@ const Product = () => {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
-          setProducts(data.result || []);
+          const productList = Array.isArray(data) ? data : (data.result || []);
+          setProducts(productList);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -85,7 +86,8 @@ const Product = () => {
         const response = await fetch("/api/categories");
         if (response.ok) {
           const data = await response.json();
-          setCategories(data.result || []);
+          const categoryList = Array.isArray(data) ? data : (data.result || []);
+          setCategories(categoryList);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);

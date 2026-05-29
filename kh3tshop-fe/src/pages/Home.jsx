@@ -46,7 +46,7 @@ const Home = () => {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data = await response.json();
-          const productList = data.result || [];
+          const productList = Array.isArray(data) ? data : (data.result || []);
           setProducts(productList);
         }
       } catch (error) {

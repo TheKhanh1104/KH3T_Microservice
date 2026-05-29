@@ -151,7 +151,8 @@ export default function Header() {
         const response = await fetch(`/api/products`);
         if (response.ok) {
           const data = await response.json();
-          const filtered = (data.result || [])
+          const productList = Array.isArray(data) ? data : (data.result || []);
+          const filtered = productList
             .filter((product) =>
               product.name.toLowerCase().includes(searchQuery.toLowerCase())
             )

@@ -24,7 +24,9 @@ public class AuthFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
         // Exclude actuator and public endpoints
-        if (path.startsWith("/actuator") || path.startsWith("/eureka") || path.startsWith("/public") || path.equals("/")) {
+        if (path.startsWith("/actuator") || path.startsWith("/eureka") || path.startsWith("/public") || path.equals("/")
+                || path.startsWith("/api/auth/") || path.startsWith("/api/products") || path.startsWith("/api/categories")
+                || path.startsWith("/api/sizes") || path.startsWith("/api/size-details")) {
             return chain.filter(exchange);
         }
 

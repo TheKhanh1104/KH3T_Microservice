@@ -40,24 +40,33 @@ public class ProductCacheService {
     }
 
     public List<Product> getAllProducts() {
-        Object cachedData = redisTemplate.opsForValue().get(CACHE_KEY);
-        if (cachedData != null) {
-            log.info("[Cache] Cache HIT cho key: {}", CACHE_KEY);
-            try {
-                return objectMapper.convertValue(cachedData, new TypeReference<List<Product>>() {});
-            } catch (Exception e) {
-                log.error("[Cache] Lỗi convert cache data: {}", e.getMessage());
-                redisTemplate.delete(CACHE_KEY);
+        try {
+            Object cachedData = redisTemplate.opsForValue().get(CACHE_KEY);
+            if (cachedData != null) {
+                log.info("[Cache] Cache HIT cho key: {}", CACHE_KEY);
+                try {
+                    return objectMapper.convertValue(cachedData, new TypeReference<List<Product>>() {});
+                } catch (Exception e) {
+                    log.error("[Cache] Lỗi convert cache data: {}", e.getMessage());
+                    redisTemplate.delete(CACHE_KEY);
+                }
             }
+            return refreshCache();
+        } catch (Exception e) {
+            log.error("[Cache] Lỗi Redis, fallback sang DB: {}", e.getMessage());
+            return productRepository.findAllWithDetails();
         }
-        return refreshCache();
     }
 
     public synchronized List<Product> refreshCache() {
         log.info("[Cache] Refreshing product cache từ DB...");
         List<Product> products = productRepository.findAllWithDetails();
-        redisTemplate.opsForValue().set(CACHE_KEY, products, CACHE_TTL, TimeUnit.MINUTES);
-        log.info("[Cache] Cache refreshed — {} sản phẩm", products.size());
+        try {
+            redisTemplate.opsForValue().set(CACHE_KEY, products, CACHE_TTL, TimeUnit.MINUTES);
+            log.info("[Cache] Cache refreshed — {} sản phẩm", products.size());
+        } catch (Exception e) {
+            log.error("[Cache] Không thể lưu cache vào Redis: {}", e.getMessage());
+        }
         return products;
     }
 
@@ -67,6 +76,10 @@ public class ProductCacheService {
      */
     public void evictProductsCache() {
         log.info("[Cache] Evicting cache key: {}", CACHE_KEY);
-        redisTemplate.delete(CACHE_KEY);
+        try {
+            redisTemplate.delete(CACHE_KEY);
+        } catch (Exception e) {
+            log.error("[Cache] Không thể xóa cache Redis: {}", e.getMessage());
+        }
     }
 }

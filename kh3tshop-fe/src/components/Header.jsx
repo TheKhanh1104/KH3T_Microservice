@@ -23,23 +23,6 @@ export default function Header() {
   const searchRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    const sessionAlive = sessionStorage.getItem("session_alive");
-
-    if (!sessionAlive) {
-      // Tab mới hoặc browser vừa bật → logout
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      // Đánh dấu phiên đang hoạt động
-      sessionStorage.setItem("session_alive", "true");
-
-      console.log("Tab/browser mới → auto logout");
-    } else {
-      console.log("Reload hoặc chuyển trang → giữ trạng thái đăng nhập");
-    }
-  }, []);
-
   // Kiểm tra đăng nhập
   useEffect(() => {
     const checkAuth = () => {
@@ -64,18 +47,21 @@ export default function Header() {
   const [cart, setCart] = useState(null);
 
   const fetchUser = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
 
+    try {
       const res = await fetch(`/api/accounts/myinfor`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
-      const data = await res.json();
-      console.log("Tài khoản đang login: ", data.result);
-      setUser(data.result);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Tài khoản đang login: ", data.result);
+        setUser(data.result);
+      }
     } catch (error) {
       console.error("Lỗi fetch user", error);
     }

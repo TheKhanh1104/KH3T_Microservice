@@ -14,8 +14,8 @@ eureka:
 
 gemini:
   api:
-    key: ${GEMINI_API_KEY:}
-  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+    key: ${GEMINI_API_KEY}
+  base-url: https://openrouter.ai/api/v1
 
 services:
   catalog:

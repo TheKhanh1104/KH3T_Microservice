@@ -1,5 +1,6 @@
 // src/components/AdminChatBot.jsx
 import { useState, useEffect, useRef } from "react";
+import { AI_SERVICE_PREFIX } from "../config/config";
 
 const AdminChatBot = () => {
   const [open, setOpen] = useState(false);
@@ -56,7 +57,7 @@ useEffect(() => {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin-chat/ask", {
+      const res = await fetch(`${AI_SERVICE_PREFIX}/admin-chat/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -73,7 +73,7 @@ services:
       CATALOG_SERVICE_URL: http://kh3t-catalog-service:8082
       ORDER_SERVICE_URL: http://kh3t-order-service:8083
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_BASE_URL: https://generativelanguage.googleapis.com
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://openrouter.ai/api/v1}
     depends_on:
       kh3t-discovery:
         condition: service_started
@@ -81,6 +81,9 @@ services:
         condition: service_started
       kh3t-order-service:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   kh3t-gateway:
     build:

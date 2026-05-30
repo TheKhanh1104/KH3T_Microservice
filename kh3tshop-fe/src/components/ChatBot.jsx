@@ -1,5 +1,6 @@
 // src/components/ChatBot.jsx
 import { useState, useEffect, useRef } from "react";
+import { AI_SERVICE_PREFIX } from "../config/config";
 
 const ChatBot = () => {
   const [chatOpen, setChatOpen] = useState(false);
@@ -10,7 +11,36 @@ const ChatBot = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // ================== LOCALSTORAGE - F5 KHÔNG MẤT CHAT ==================
+  // ================== TẢI LỊCH SỬ TỪ SERVER ==================
+  const loadHistoryFromServer = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${AI_SERVICE_PREFIX}/chat/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const serverHistory = await res.json();
+        if (serverHistory && serverHistory.length > 0) {
+          // CHỈ CẬP NHẬT NẾU KHÔNG ĐANG TRONG QUÁ TRÌNH CHAT
+          setMessages(prev => {
+            // Nếu tin nhắn cuối cùng là của user (đang đợi bot) thì không ghi đè
+            const isUserWaiting = prev.length > 0 && prev[prev.length - 1].sender === "user";
+            if (isUserWaiting) return prev;
+            return serverHistory;
+          });
+          localStorage.setItem("kh3t_chat_history", JSON.stringify(serverHistory));
+        }
+      }
+    } catch (e) {
+      console.error("Không thể tải lịch sử từ server:", e);
+    }
+  };
+
+  // ================== LOCALSTORAGE & SYNC ==================
   useEffect(() => {
     const saved = localStorage.getItem("kh3t_chat_history");
     if (saved) {
@@ -23,26 +53,36 @@ const ChatBot = () => {
         console.error("Lỗi parse chat history:", e);
       }
     }
+
+    // Ưu tiên tải bản mới nhất từ server nếu đã đăng nhập
+    loadHistoryFromServer();
   }, []);
 
   useEffect(() => {
-    const hasRealMessage = messages.length > 1 || 
-      (messages.length === 1 && messages[0].sender === "user");
-    if (hasRealMessage) {
-      localStorage.setItem("kh3t_chat_history", JSON.stringify(messages));
-    }
-  }, [messages]);
+    const handleAuthChange = (e) => {
+      // Chỉ đồng bộ khi login/logout hoặc tab khác thay đổi token
+      if (e && e.type === "storage" && e.key && e.key !== "accessToken") return;
 
-  useEffect(() => {
-    const handleLogout = () => {
-      localStorage.removeItem("kh3t_chat_history");
-      setMessages([
-        { sender: "bot", text: "Xin chào! Mình là trợ lý mua sắm đây. Bạn đang tìm sản phẩm nào hôm nay?" }
-      ]);
+      if (localStorage.getItem("accessToken")) {
+        loadHistoryFromServer();
+      } else {
+        localStorage.removeItem("kh3t_chat_history");
+        setMessages([{ sender: "bot", text: "Xin chào! Mình là trợ lý mua sắm đây. Bạn đang tìm sản phẩm nào hôm nay?" }]);
+      }
     };
-    window.addEventListener("logout", handleLogout);
-    return () => window.removeEventListener("logout", handleLogout);
+
+    window.addEventListener("login", handleAuthChange);
+    window.addEventListener("logout", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("login", handleAuthChange);
+      window.removeEventListener("logout", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
   }, []);
+
+  // ĐÃ XÓA useEffect TỰ ĐỘNG LƯU LOCALSTORAGE ĐỂ TRÁNH GÂY TRỄ/MẤT TIN NHẮN
   // ====================================================================
 
   const scrollToBottom = () => {
@@ -53,52 +93,63 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages, chatLoading]);
 
-  // ================== CHỖ SỬA 1: NHẬN JSON TỪ BACKEND ==================
+  // ================== GỬI TIN NHẮN ==================
   const sendMessage = async () => {
-  if (!input.trim() || chatLoading) return;
+    if (!input.trim() || chatLoading) return;
 
-  const userMessage = input.trim();
-  setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
-  setInput("");
-  setChatLoading(true);
+    const userText = input.trim();
+    const newUserMsg = { sender: "user", text: userText };
 
-  try {
-    const token = localStorage.getItem("accessToken");
-
-    const res = await fetch("/api/chat/ask", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ prompt: userMessage }),
+    // 1. Hiển thị ngay lập tức và lưu thủ công vào local
+    setMessages(prev => {
+      const newMsgs = [...prev, newUserMsg];
+      localStorage.setItem("kh3t_chat_history", JSON.stringify(newMsgs));
+      return newMsgs;
     });
 
-    // Nếu backend trả lỗi HTTP thì throw luôn
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+    setInput("");
+    setChatLoading(true);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${AI_SERVICE_PREFIX}/chat/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ prompt: userText }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // 2. Thêm tin nhắn bot và lưu thủ công
+      const botMsg = {
+        sender: "bot",
+        text: data.text || "Dạ em chưa hiểu lắm ạ!",
+        suggestedProducts: data.suggestedProducts || [],
+        compareIds: data.compareIds || null,
+      };
+
+      setMessages(prev => {
+        const newMsgs = [...prev, botMsg];
+        localStorage.setItem("kh3t_chat_history", JSON.stringify(newMsgs));
+        return newMsgs;
+      });
     }
-
-    const data = await res.json();
-
-    setMessages(prev => [...prev, {
-      sender: "bot",
-      text: data.message || "Dạ em chưa hiểu lắm ạ!",
-      suggestedProducts: data.suggestedProducts || [],
-      compareIds: data.compareIds || null,
-    }]);
-  } 
-  catch (err) {
-    console.error("Chat error:", err);
-    setMessages(prev => [...prev, {
-      sender: "bot",
-      text: "Oops! Có lỗi kết nối rồi, thử lại sau ít phút nhé!"
-    }]);
-  } 
-  finally {
-    setChatLoading(false);
-  }
-};
+    catch (err) {
+      console.error("Chat error:", err);
+      setMessages(prev => [...prev, {
+        sender: "bot",
+        text: "Oops! Có lỗi kết nối rồi, thử lại sau ít phút nhé!"
+      }]);
+    }
+    finally {
+      setChatLoading(false);
+    }
+  };
 
 
   const handleKeyPress = (e) => {

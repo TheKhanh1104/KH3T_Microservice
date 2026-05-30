@@ -15,15 +15,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Base64;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
 
-    private static final Map<String, Deque<String>> CHAT_HISTORY = new ConcurrentHashMap<>();
+    private static final Map<String, Deque<Map<String, Object>>> CHAT_HISTORY = new ConcurrentHashMap<>();
     private static final int MAX_MESSAGES = 10;
 
     private final GeminiService geminiService;
@@ -34,90 +37,132 @@ public class ChatController {
         this.shopDataService = shopDataService;
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<Map<String, Object>>> getChatHistory(HttpServletRequest request) {
+        String token = extractToken(request.getHeader("Authorization"));
+        String userId = "guest";
+        
+        if (token != null) {
+            try {
+                String[] chunks = token.split("\\.");
+                if (chunks.length > 1) {
+                    String payload = new String(Base64.getUrlDecoder().decode(chunks[1]));
+                    Map<String, Object> body = new ObjectMapper().readValue(payload, Map.class);
+                    userId = body.getOrDefault("sub", body.getOrDefault("username", "user_unknown")).toString();
+                }
+            } catch (Exception e) {
+                userId = "user_fallback_" + (token.length() > 10 ? token.substring(token.length() - 10) : token);
+            }
+        }
+        
+        Deque<Map<String, Object>> history = CHAT_HISTORY.get(userId);
+        if (history == null) return ResponseEntity.ok(List.of());
+        
+        return ResponseEntity.ok(new ArrayList<>(history));
+    }
+
     @PostMapping("/ask")
     public ResponseEntity<Map<String, Object>> askGemini(
             HttpServletRequest request,
             @RequestBody PromptRequest promptRequest
     ) {
-        String userPrompt = Optional.ofNullable(promptRequest)
-                .map(PromptRequest::getPrompt)
-                .orElse("")
-                .trim();
-
-        if (userPrompt.isEmpty()) {
-            return ResponseEntity.ok(Map.of(
-                    "message", "Dạ anh/chị nhắn gì cho em với ạ!",
-                    "suggestedProducts", List.of()
-            ));
-        }
-
-        String token = extractToken(request.getHeader("Authorization"));
-        String userId = token != null ? "user_" + token : "guest";
-        Deque<String> history = CHAT_HISTORY.computeIfAbsent(userId, key -> new ArrayDeque<>());
-
-        history.addFirst("user: " + userPrompt);
-        keepOnlyLastN(history, MAX_MESSAGES);
-
-        String productContext = buildFullProductContextWithCostPrice();
-        String shopInfo = """
-            === KH3T SHOP - Trợ lý dễ thương ===
-            - Chỉ bán online, ship toàn quốc
-            - Đổi trả miễn phí 7 ngày (lỗi NSX)
-            - Hotline/Zalo: 0903.456.789
-            - Giờ làm: 8h30 - 22h00
-            - Quy trình đặt hàng: Chọn sản phẩm, chọn size, nhập thông tin ship hàng, thanh toán qua ngân hàng, ví điện tử, tiền mặt.
-            - Các thắc mắc khác liên hệ MrK qua zalo số 0794263939
-            """;
-
-        String historyText = history.isEmpty()
-                ? ""
-                : "Lịch sử chat gần đây (mới nhất ở trên):\n" + String.join("\n", history) + "\n";
-
-        String finalPrompt = """
-            Bạn là cô trợ lý mua sắm SIÊU DỄ THƯƠNG của KH3T Shop
-            Xưng "em", gọi khách là "anh/chị", dùng thật nhiều emoji
-            Trả lời tự nhiên, ngắn gọn, tối đa 3 câu thôi nha!
-
-            Thông tin shop:
-            %s
-
-            Lịch sử chat:
-            %s
-
-            Danh sách TOÀN BỘ sản phẩm (giá hiển thị là giá bán cuối cùng - costPrice):
-            %s
-
-            Khách vừa hỏi: "%s"
-            Hãy trả lời thật dễ thương và chính xác nhé!
-            """.formatted(shopInfo, historyText, productContext, userPrompt);
-
         try {
-            String reply = geminiService.generateText(finalPrompt);
-            String botReply = reply == null || reply.trim().isEmpty()
-                    ? "Dạ để em kiểm tra lại giúp anh/chị nha!"
-                    : reply.trim();
+            String userPrompt = Optional.ofNullable(promptRequest)
+                    .map(PromptRequest::getPrompt)
+                    .orElse("")
+                    .trim();
 
-            history.addFirst("bot: " + botReply);
-            keepOnlyLastN(history, MAX_MESSAGES);
+            if (userPrompt.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                        "text", "Dạ anh/chị nhắn gì cho em với ạ!",
+                        "suggestedProducts", List.of()
+                ));
+            }
+
+            String token = extractToken(request.getHeader("Authorization"));
+            String userId = "guest";
+            
+            if (token != null) {
+                try {
+                    String[] chunks = token.split("\\.");
+                    if (chunks.length > 1) {
+                        String payload = new String(Base64.getUrlDecoder().decode(chunks[1]));
+                        Map<String, Object> body = new ObjectMapper().readValue(payload, Map.class);
+                        userId = body.getOrDefault("sub", body.getOrDefault("username", "user_unknown")).toString();
+                    }
+                } catch (Exception e) {
+                    userId = "user_fallback_" + (token.length() > 10 ? token.substring(token.length() - 10) : token);
+                }
+            }
+            
+            Deque<Map<String, Object>> history = CHAT_HISTORY.computeIfAbsent(userId, key -> new ConcurrentLinkedDeque<>());
+
+            String productContext = buildFullProductContextWithCostPrice();
+            String shopInfo = """
+                === KH3T SHOP - Trợ lý dễ thương ===
+                - Chỉ bán online, ship toàn quốc, Hotline/Zalo: 0903.456.789
+                - Đổi trả 7 ngày, quy trình đơn giản.
+                """;
+
+            // Xây dựng history text cho AI (chỉ lấy text)
+            String historyText = history.stream()
+                    .map(m -> m.get("sender") + ": " + m.get("text"))
+                    .collect(Collectors.joining("\n"));
+
+            String finalPrompt = """
+                Bạn là cô trợ lý mua sắm SIÊU DỄ THƯƠNG của KH3T Shop.
+                Xưng "em", gọi khách là "anh/chị", dùng nhiều emoji.
+                
+                QUAN TRỌNG: 
+                1. Nếu khách muốn so sánh hoặc hỏi về sản phẩm cụ thể, em PHẢI viết TÊN ĐẦY ĐỦ của sản phẩm đó trong câu trả lời.
+                2. Nếu so sánh, hãy nêu điểm khác biệt ngắn gọn.
+
+                Thông tin shop: %s
+                Lịch sử chat:
+                %s
+                
+                Danh sách sản phẩm của shop:
+                %s
+
+                Khách hỏi: "%s"
+                Hãy trả lời thật dễ thương và nhớ nêu tên sản phẩm rõ ràng nhé!
+                """.formatted(shopInfo, historyText, productContext, userPrompt);
+
+            String reply = geminiService.generateText(finalPrompt);
+            String botReply = (reply == null || reply.trim().isEmpty())
+                    ? "Dạ em đang hơi bối rối, anh/chị hỏi lại giúp em nha!"
+                    : reply.trim();
 
             List<Map<String, Object>> suggestedProducts = findSuggestedProducts(botReply);
             List<Long> compareIds = detectCompareRequest(userPrompt, botReply);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", botReply);
-            response.put("suggestedProducts", suggestedProducts);
-            if (compareIds != null && compareIds.size() >= 2 && compareIds.size() <= 4) {
-                response.put("compareIds", compareIds);
+            // Lưu vào history dạng Map đầy đủ
+            Map<String, Object> userMsg = new HashMap<>();
+            userMsg.put("sender", "user");
+            userMsg.put("text", userPrompt);
+            history.addLast(userMsg);
+
+            Map<String, Object> botMsg = new HashMap<>();
+            botMsg.put("sender", "bot");
+            botMsg.put("text", botReply);
+            botMsg.put("suggestedProducts", suggestedProducts);
+            if (compareIds != null && compareIds.size() >= 2) {
+                botMsg.put("compareIds", compareIds);
+            }
+            history.addLast(botMsg);
+
+            while (history.size() > MAX_MESSAGES * 2) { // Nhân 2 vì mỗi lượt có 2 message
+                history.pollFirst();
             }
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(botMsg);
+
         } catch (Exception e) {
             e.printStackTrace();
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("message", "Em đang hơi lag xíu, anh/chị nhắn lại giúp em nha!");
-            errorResponse.put("suggestedProducts", List.of());
-            errorResponse.put("compareIds", null);
-            return ResponseEntity.ok(errorResponse);
+            return ResponseEntity.ok(Map.of(
+                    "text", "Dạ em hơi lag xíu, anh/chị nhắn lại câu vừa rồi giúp em nhé! 🌸",
+                    "suggestedProducts", List.of()
+            ));
         }
     }
 
@@ -164,14 +209,15 @@ public class ChatController {
     private List<Long> detectCompareRequest(String userPrompt, String botReply) {
         String text = (userPrompt + " " + botReply).toLowerCase();
         boolean isCompareIntent = text.contains("so sánh")
-                || text.contains("vs")
+                || text.contains(" vs ")
                 || text.contains("versus")
                 || text.contains("đối chiếu")
                 || text.contains("khác nhau")
                 || text.contains("nên mua cái nào")
-                || text.contains("cái nào tốt ho")
+                || text.contains("cái nào tốt hơn")
                 || text.contains("so với")
-                || (text.contains("trong 2 cái") && (text.contains("trong hai cái") || text.contains("so kè") || text.contains("phân tích")));
+                || (text.contains("trong") && text.contains("cái") && (text.contains("nào") || text.contains("thế nào")))
+                || (text.contains("giữa") && (text.contains("và") || text.contains("với")));
 
         if (!isCompareIntent) {
             return null;
@@ -182,13 +228,15 @@ public class ChatController {
 
         for (Map<String, Object> product : allProducts) {
             String name = text(product.get("name")).toLowerCase();
+            // Chỉ tìm các tên sản phẩm có độ dài đủ lớn để tránh match sai các từ ngắn
+            if (name.length() < 3) continue;
+
             String cleanName = name.replace(" ", "")
                     .replace("-", "")
-                    .replace("&", "")
-                    .replace("jeans", "")
-                    .replace("shirt", "");
+                    .replace("&", "");
 
-            if (text.contains(name) || text.contains(cleanName)) {
+            // Ưu tiên match tên đầy đủ trước
+            if (text.contains(name) || (cleanName.length() > 5 && text.contains(cleanName))) {
                 Long id = longValue(product.get("id"));
                 if (id != null) {
                     mentionedIds.add(id);

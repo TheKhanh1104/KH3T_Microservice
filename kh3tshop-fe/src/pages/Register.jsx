@@ -1,5 +1,5 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -37,6 +37,21 @@ const Register = () => {
     password: null,
     password_confirmed: null,
   });
+
+  const [redirectCountdown, setRedirectCountdown] = useState(null);
+
+  // Redirection countdown effect
+  useEffect(() => {
+    if (redirectCountdown === null) return;
+    if (redirectCountdown <= 0) {
+      navigate("/login");
+      return;
+    }
+    const timer = setInterval(() => {
+      setRedirectCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [redirectCountdown, navigate]);
 
   // Handle validation when user leaves the input field (onBlur)
   const handleValidation = (e) => {
@@ -148,7 +163,8 @@ const Register = () => {
       if (response.ok) {
         const result = await response.json();
         console.log("Account created successfully", result);
-        toast.success("Registration successful");
+        toast.success("Đăng ký thành công!");
+        setRedirectCountdown(5);
       } else {
         const errorData = await response.json();
         console.error("Error creating account:", errorData);
@@ -170,184 +186,203 @@ const Register = () => {
         {/* Left side - Form */}
         <div className="p-8 md:p-12">
           <h2 className="font-bold text-4xl mb-2">Sign Up</h2>
-          <p className="text-gray-500 mb-8">Enter user information</p>
 
-          <form className="grid gap-4" onSubmit={handleSubmit}>
-            <div className="relative">
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "fullName"
-                )}`}
-                placeholder="Họ và tên..."
-                required
-              />
-              {renderIcon("fullName")}
-            </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "phoneNumber"
-                )}`}
-                placeholder="Số điện thoại..."
-                required
-              />
-              {renderIcon("phoneNumber")}
-            </div>
-
-            <div className="relative">
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "email"
-                )}`}
-                placeholder="Email..."
-                required
-              />
-              {renderIcon("email")}
-            </div>
-
-            <div className="grid gap-2">
-              <label className="font-semibold text-sm text-gray-700">
-                Giới tính:
-              </label>
-              <div className="flex gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="MALE"
-                    className="accent-red-500 w-4 h-4"
-                    checked={formData.gender == "MALE"}
-                    onChange={handleChange}
-                    defaultChecked
-                    required
-                  />
-                  <span className="text-gray-700">Nam</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="FEMALE"
-                    className="accent-red-500 w-4 h-4"
-                    checked={formData.gender == "FEMALE"}
-                    onChange={handleChange}
-                    required
-                  />
-                  <span className="text-gray-700">Nữ</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="relative">
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-red-400 transition text-gray-600"
-                required
-              />
-            </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "username"
-                )}`}
-                placeholder="Username..."
-                required
-              />
-              {renderIcon("username")}
-            </div>
-
-            <div className="relative">
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "password"
-                )}`}
-                placeholder="Mật khẩu..."
-                required
-              />
-              {renderIcon("password")}
-            </div>
-
-            <div className="relative">
-              <input
-                type="password"
-                name="password_confirmed"
-                value={formData.password_confirmed}
-                onChange={handleChange}
-                onBlur={handleValidation}
-                className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
-                  "password_confirmed"
-                )}`}
-                placeholder="Nhập lại mật khẩu..."
-                required
-              />
-              {renderIcon("password_confirmed")}
-            </div>
-
-            <div className="flex gap-3 mt-4">
+          {redirectCountdown !== null ? (
+            <div className="text-center py-10 mt-10">
+              <div className="text-green-500 text-6xl mb-4">✓</div>
+              <p className="text-xl font-semibold text-gray-800">Đăng ký thành công!</p>
+              <p className="text-gray-600 mt-2">
+                Bạn sẽ được tự động chuyển về trang đăng nhập sau <span className="font-bold text-red-500">{redirectCountdown}s</span>...
+              </p>
               <button
-                type="button"
-                className="px-6 py-3 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                onClick={() => {
-                  navigate("/login");
-                }}
+                onClick={() => navigate("/login")}
+                className="mt-6 px-6 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition"
               >
-                Sign In
-              </button>
-              <button
-                type="button"
-                className="px-6 py-3 rounded-lg bg-gray-300 text-gray-700 font-semibold hover:bg-gray-400 transition"
-              >
-                Sign Up
+                Chuyển ngay
               </button>
             </div>
+          ) : (
+            <>
+              <p className="text-gray-500 mb-8">Enter user information</p>
 
-            <button
-              type="submit"
-              className="w-full py-4 rounded-lg bg-black text-white font-bold text-lg hover:bg-gray-800 transition mt-2"
-            >
-              REGISTER
-            </button>
+              <form className="grid gap-4" onSubmit={handleSubmit}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "fullName"
+                    )}`}
+                    placeholder="Họ và tên..."
+                    required
+                  />
+                  {renderIcon("fullName")}
+                </div>
 
-            <button
-              type="button"
-              className="w-full py-3 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-              onClick={() => {
-                navigate("/");
-              }}
-            >
-              Quay lại
-            </button>
-          </form>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "phoneNumber"
+                    )}`}
+                    placeholder="Số điện thoại..."
+                    required
+                  />
+                  {renderIcon("phoneNumber")}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "email"
+                    )}`}
+                    placeholder="Email..."
+                    required
+                  />
+                  {renderIcon("email")}
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="font-semibold text-sm text-gray-700">
+                    Giới tính:
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="MALE"
+                        className="accent-red-500 w-4 h-4"
+                        checked={formData.gender == "MALE"}
+                        onChange={handleChange}
+                        defaultChecked
+                        required
+                      />
+                      <span className="text-gray-700">Nam</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="FEMALE"
+                        className="accent-red-500 w-4 h-4"
+                        checked={formData.gender == "FEMALE"}
+                        onChange={handleChange}
+                        required
+                      />
+                      <span className="text-gray-700">Nữ</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-red-400 transition text-gray-600"
+                    required
+                  />
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "username"
+                    )}`}
+                    placeholder="Username..."
+                    required
+                  />
+                  {renderIcon("username")}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "password"
+                    )}`}
+                    placeholder="Mật khẩu..."
+                    required
+                  />
+                  {renderIcon("password")}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="password_confirmed"
+                    value={formData.password_confirmed}
+                    onChange={handleChange}
+                    onBlur={handleValidation}
+                    className={`w-full border-2 rounded-lg px-4 py-3 focus:outline-none transition ${getBorderClass(
+                      "password_confirmed"
+                    )}`}
+                    placeholder="Nhập lại mật khẩu..."
+                    required
+                  />
+                  {renderIcon("password_confirmed")}
+                </div>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    type="button"
+                    className="px-6 py-3 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                    onClick={() => {
+                      navigate("/login");
+                    }}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    className="px-6 py-3 rounded-lg bg-gray-300 text-gray-700 font-semibold hover:bg-gray-400 transition"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-4 rounded-lg bg-black text-white font-bold text-lg hover:bg-gray-800 transition mt-2"
+                >
+                  REGISTER
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full py-3 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                  onClick={() => {
+                    navigate("/");
+                  }}
+                >
+                  Quay lại
+                </button>
+              </form>
+            </>
+          )}
         </div>
 
         {/* Right side - Image */}

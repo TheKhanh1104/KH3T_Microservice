@@ -7,6 +7,18 @@ kh3tshop-be/src/main/resources/credentials.json
 *.tfstate.*
 *.exe
 
+<<<<<<< HEAD
+# Build and IDE artifacts
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.idea/
+.vscode/
+*.iml
+*.log
+=======
 # Java build artifacts
 **/target/
 **/*.class
@@ -16,3 +28,4 @@ kh3tshop-be/src/main/resources/credentials.json
 *.iml
 .vscode/
 *.DS_Store
+>>>>>>> 5dafad02e68f5c55b0631c9be33ac2639d4c09a8

@@ -29,6 +29,11 @@ const ForgotPassword = () => {
       if (response.ok) {
         sessionStorage.setItem("resetToken", data.result.token);
         sessionStorage.setItem("otp", data.result.otp);
+        sessionStorage.setItem("resetEmail", email); // Lưu lại email để Resend OTP
+
+        // Lưu thời điểm hết hạn (2 phút từ bây giờ)
+        const expiryTime = Date.now() + 120 * 1000;
+        sessionStorage.setItem("otpExpiry", expiryTime.toString());
 
         alert("OTP has been sent to your email. Please check!");
 

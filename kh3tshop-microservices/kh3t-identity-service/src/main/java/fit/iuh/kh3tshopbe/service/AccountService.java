@@ -46,25 +46,32 @@ public class AccountService {
 
 
     public AccountResponse addAccount(AccountRequest accountRequest) {
+        if (accountRequest.getCustomer() == null || accountRequest.getCustomer().getEmail() == null) {
+            throw new AppException(ErrorCode.UnknownError);
+        }
+
         if(this.accountRepository.existsByUsername(accountRequest.getUsername()) ||
                 customerService.existsByEmail(accountRequest.getCustomer().getEmail())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
+        
         Account account = accountMapper.toAccount(accountRequest);
 
         account.setPassword(passwordEncoder.encode(accountRequest.getPassword()));
         account.setRole(Role.USER);
         account.setStatusLogin(StatusLogin.ACTIVE);
-        account.setCreateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));
-        account.setUpdateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));
+        
+        Date now = new Date();
+        account.setCreateAt(now);
+        account.setUpdateAt(now);
 
         Customer customer = customerMapper.toCustomer(accountRequest.getCustomer());
-        customer.setCreateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));
-        customer.setUpdateAt(Date.from(LocalDate.now().atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()));
+        customer.setCreateAt(now);
+        customer.setUpdateAt(now);
         customer.setStatus(Status.ACTIVE);
         account.setCustomer(customer);
 
-        return  accountMapper.toAccountResponse(this.accountRepository.save(account));
+        return accountMapper.toAccountResponse(this.accountRepository.save(account));
     }
 
 
@@ -186,6 +193,10 @@ public class AccountService {
 
     public  Account saveAccount(Account account){
         return this.accountRepository.save(account);
+    }
+
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
 
 }

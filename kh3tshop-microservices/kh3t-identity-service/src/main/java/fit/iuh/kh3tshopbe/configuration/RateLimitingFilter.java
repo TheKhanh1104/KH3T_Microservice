@@ -34,16 +34,19 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Áp dụng giới hạn request cho endpoint đăng nhập ở phía Server
-        if ("/auth/login".equals(path)) {
-            String ip = request.getRemoteAddr();
+        // Kiểm tra linh hoạt hơn cho các đường dẫn login (bao gồm cả khi qua Gateway)
+        if (path.endsWith("/auth/login")) {
+            String ip = request.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isEmpty()) {
+                ip = request.getRemoteAddr();
+            }
             Bucket bucket = cache.computeIfAbsent(ip, k -> createNewBucket());
 
             if (!bucket.tryConsume(1)) {
-                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value()); // Trả về HTTP Status 429
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write(
-                        "{\"code\":429,\"message\":\"Server Rate Limit: Quá nhiều yêu cầu đăng nhập từ IP của bạn. Vui lòng thử lại sau 1 phút.\"}");
+                        "{\"code\":429,\"message\":\"Quá nhiều yêu cầu. Vui lòng thử lại sau.\"}");
                 return;
             }
         }

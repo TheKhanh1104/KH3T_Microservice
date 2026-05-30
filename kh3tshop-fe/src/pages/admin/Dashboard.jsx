@@ -10,6 +10,17 @@ const Dashboard = () => {
   const [detailedOrders, setDetailedOrders] = useState([]);
   const [timeSlotData, setTimeSlotData] = useState([]);
   const [allData, setAllData] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('en-US'));
+
+  // -------------------------
+  // 0. CLOCK EFFECT
+  // -------------------------
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US'));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // -------------------------
   // 1. DATE RANGE
@@ -33,9 +44,12 @@ const Dashboard = () => {
         );
 
         const data = await res.json();
-        setAllData(data || []);
+        // Kiểm tra nếu data có bọc trong ApiResponse (data.result)
+        const actualData = Array.isArray(data) ? data : (data.result && Array.isArray(data.result) ? data.result : []);
+        setAllData(actualData);
       } catch (e) {
         console.error("Error fetching daily stats:", e);
+        setAllData([]);
       }
     };
 
@@ -50,9 +64,12 @@ const Dashboard = () => {
       const res = await fetch("/api/orders/time-slots", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTimeSlotData(await res.json());
+      const data = await res.json();
+      const actualData = Array.isArray(data) ? data : (data.result && Array.isArray(data.result) ? data.result : []);
+      setTimeSlotData(actualData);
     } catch (err) {
       console.error("Error fetching time slots:", err);
+      setTimeSlotData([]);
     }
   };
 
@@ -61,9 +78,12 @@ const Dashboard = () => {
       const res = await fetch("/api/orders/detailed-orders", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setDetailedOrders(await res.json());
+      const data = await res.json();
+      const actualData = Array.isArray(data) ? data : (data.result && Array.isArray(data.result) ? data.result : []);
+      setDetailedOrders(actualData);
     } catch (err) {
       console.error("Error fetching detailed orders:", err);
+      setDetailedOrders([]);
     }
   };
 
@@ -72,9 +92,12 @@ const Dashboard = () => {
       const res = await fetch("/api/customer-trading/regions", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRegionData(await res.json());
+      const data = await res.json();
+      const actualData = Array.isArray(data) ? data : (data.result && Array.isArray(data.result) ? data.result : []);
+      setRegionData(actualData);
     } catch (err) {
       console.error("Error fetching regions:", err);
+      setRegionData([]);
     }
   };
 
@@ -83,9 +106,12 @@ const Dashboard = () => {
       const res = await fetch("/api/invoices/payment", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setPaymentData(await res.json());
+      const data = await res.json();
+      const actualData = Array.isArray(data) ? data : (data.result && Array.isArray(data.result) ? data.result : []);
+      setPaymentData(actualData);
     } catch (err) {
       console.error("Error fetching payment data:", err);
+      setPaymentData([]);
     }
   };
 
@@ -112,6 +138,7 @@ const Dashboard = () => {
   };
 
   const chartData = useMemo(() => {
+    if (!Array.isArray(allData)) return [];
     const dateList = getDateList(dateRange.start, dateRange.end);
 
     return dateList.map(d => {
@@ -291,7 +318,7 @@ const Dashboard = () => {
             </div>
             <div className="text-right">
               <p className="text-indigo-100 text-sm mb-1">Last updated</p>
-              <p className="text-xl font-semibold">{new Date().toLocaleTimeString('en-US')}</p>
+              <p className="text-xl font-semibold">{currentTime}</p>
             </div>
           </div>
         </div>

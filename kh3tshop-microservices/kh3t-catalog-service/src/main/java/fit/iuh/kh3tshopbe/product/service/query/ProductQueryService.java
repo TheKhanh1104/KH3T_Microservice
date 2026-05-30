@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
@@ -40,19 +41,39 @@ public class ProductQueryService {
      * Lấy tất cả sản phẩm — ưu tiên từ Redis Cache (Cache-Aside).
      */
     public List<Product> getAllProducts() {
-        log.info("[Query] getAllProducts — kiểm tra cache...");
-        return productCacheService.getAllProducts();
+        log.info("[Query] getAllProducts — đọc trực tiếp từ DB để kiểm tra...");
+        return productRepository.findAllWithDetails();
     }
 
-    /**
-     * Lấy sản phẩm theo ID từ DB (không cache vì ít được gọi hàng loạt).
-     */
+    @Transactional(readOnly = true)
     public ProductResponse getProductById(int id) {
-        log.info("[Query] getProductById: {}", id);
-        Product product = productRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với id: " + id));
-        return toResponse(product, 0L);
+        log.info("======= [DEBUG CATALOG] Đang tìm sản phẩm ID: {} =======", id);
+        
+        // 1. Tìm đơn giản nhất trước
+        Product product = productRepository.findById(id)
+                .orElse(null);
+
+        if (product == null) {
+            log.error("❌ [DEBUG CATALOG] Không tìm thấy ID {} trong DB kh3t_catalog!", id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm ID: " + id);
+        }
+
+        log.info("✅ [DEBUG CATALOG] Tìm thấy sản phẩm: {}. Đang convert...", product.getName());
+        
+        try {
+            return toResponse(product, 0L);
+        } catch (Exception e) {
+            log.error("❌ [DEBUG CATALOG] Lỗi mapping sản phẩm {}: {}", id, e.getMessage());
+            e.printStackTrace();
+            // Trả về bản tối giản để không bị Product not found
+            return ProductResponse.builder()
+                    .id(product.getId())
+                    .name(product.getName())
+                    .price(product.getPrice())
+                    .imageUrlFront(product.getImageUrlFront())
+                    .description(product.getDescription())
+                    .build();
+        }
     }
 
     /**
@@ -89,21 +110,48 @@ public class ProductQueryService {
         return stats;
     }
 
-    // ─── Mapper nội bộ ──────────────────────────────────────────────────────
+    // ─── Mapper nội bộ (Đã thêm kiểm tra Null an toàn) ──────────────────────
 
     private ProductResponse toResponse(Product p, Long soldQuantity) {
-        List<ProductResponse.SizeDetailResponse> sizeDetails = p.getSizeDetails() == null ? new ArrayList<>() :
-                p.getSizeDetails().stream()
-                        .map(sd -> ProductResponse.SizeDetailResponse.builder()
-                                .id(sd.getId())
-                                .sizeName(sd.getSize().getNameSize().name())
-                                .quantity(sd.getQuantity())
-                                .build())
+        List<ProductResponse.SizeDetailResponse> sizeDetails = new ArrayList<>();
+        
+        try {
+            if (p.getSizeDetails() != null) {
+                sizeDetails = p.getSizeDetails().stream()
+                        .filter(sd -> sd != null)
+                        .map(sd -> {
+                            String name = "N/A";
+                            if (sd.getSize() != null && sd.getSize().getNameSize() != null) {
+                                name = sd.getSize().getNameSize().name();
+                            }
+                            return ProductResponse.SizeDetailResponse.builder()
+                                    .id(sd.getId())
+                                    .sizeName(name)
+                                    .quantity(sd.getQuantity())
+                                    .build();
+                        })
                         .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi load SizeDetails cho sản phẩm {}: {}", p.getId(), e.getMessage());
+        }
+
+        CategoryResponse categoryResp = null;
+        try {
+            if (p.getCategory() != null) {
+                categoryResp = CategoryResponse.builder()
+                        .id(p.getCategory().getId())
+                        .name(p.getCategory().getName())
+                        .imageUrl(p.getCategory().getImageUrl())
+                        .build();
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi load Category cho sản phẩm {}: {}", p.getId(), e.getMessage());
+        }
 
         return ProductResponse.builder()
                 .id(p.getId())
-                .name(p.getName())
+                .name(p.getName() != null ? p.getName() : "Không tên")
                 .description(p.getDescription())
                 .price(p.getPrice())
                 .costPrice(p.getCostPrice())
@@ -119,12 +167,7 @@ public class ProductQueryService {
                 .form(p.getForm())
                 .soldQuantity(soldQuantity)
                 .status(p.getStatus())
-                .category(p.getCategory() == null ? null :
-                        CategoryResponse.builder()
-                                .id(p.getCategory().getId())
-                                .name(p.getCategory().getName())
-                                .imageUrl(p.getCategory().getImageUrl())
-                                .build())
+                .category(categoryResp)
                 .sizeDetails(sizeDetails)
                 .build();
     }

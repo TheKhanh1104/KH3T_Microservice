@@ -154,12 +154,27 @@ const ProductDetail = () => {
     try {
       const token = localStorage.getItem("accessToken");
 
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
       const res = await fetch(`/api/accounts/myinfor`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("user");
+          setUser(null);
+        }
+        throw new Error(`Failed to load user info (${res.status})`);
+      }
+
       const data = await res.json();
       console.log("Tài khoản đang login: ", data.result);
       setUser(data.result);
@@ -178,6 +193,11 @@ const ProductDetail = () => {
   const fetchCart = async () => {
     try {
       const token = localStorage.getItem("accessToken");
+
+      if (!token || !user?.id) {
+        return;
+      }
+
       const res = await fetch(
         `/api/carts/account/${user.id}`,
         {
@@ -187,6 +207,17 @@ const ProductDetail = () => {
           },
         }
       );
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("user");
+          setUser(null);
+          setCart(null);
+        }
+        throw new Error(`Failed to load cart (${res.status})`);
+      }
+
       const data = await res.json();
       console.log("Cart của user: ", data.result);
       setCart(data.result);

@@ -14,12 +14,11 @@ import java.util.Map;
 public class GeminiService {
 
     private static final List<String> FALLBACK_MODELS = List.of(
-            "google/gemma-4-31b-it:free",
-            "google/gemma-4-26b-a4b-it:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "deepseek/deepseek-v4-flash:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "openai/gpt-oss-20b:free"
+            "google/gemma-2-9b-it:free",
+            "meta-llama/llama-3-8b-instruct:free",
+            "deepseek/deepseek-r1:free",
+            "qwen/qwen-2-7b-instruct:free",
+            "microsoft/phi-3-medium-128k-instruct:free"
     );
 
     private final WebClient.Builder webClientBuilder;
@@ -60,9 +59,7 @@ public class GeminiService {
             } catch (WebClientResponseException e) {
                 int status = e.getStatusCode().value();
                 System.out.println("=== Model " + model + " failed with " + status + ", trying next... ===");
-                if (status != 429 && status != 503 && status != 404) {
-                    throw e;
-                }
+                // Không ném exception (throw e) để tiếp tục thử các model fallback khác nếu model này bị lỗi (như lỗi 400 do sai tên model hoặc hết quota)
             } catch (Exception e) {
                 System.out.println("=== Model " + model + " error: " + e.getMessage() + ", trying next... ===");
             }

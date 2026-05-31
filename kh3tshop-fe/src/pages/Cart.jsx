@@ -54,6 +54,19 @@ const Cart = () => {
     });
     const [cart, setCart] = useState(null);
 
+    const parseJsonResponse = async (response) => {
+        const text = await response.text();
+        if (!text) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch {
+            return null;
+        }
+    };
+
     const fetchUser = async () => {
         try {
             const token = localStorage.getItem("accessToken");
@@ -64,7 +77,16 @@ const Cart = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const data = await res.json();
+            if (!res.ok) {
+                console.error("Lỗi fetch user", res.status, res.statusText);
+                return;
+            }
+
+            const data = await parseJsonResponse(res);
+            if (!data) {
+                console.error("Lỗi fetch user: response rỗng hoặc không phải JSON");
+                return;
+            }
             console.log("Tài khoản đang login: ", data.result);
             setUser(data.result);
         } catch (error) {
@@ -88,7 +110,16 @@ const Cart = () => {
                     },
                 }
             );
-            const data = await res.json();
+            if (!res.ok) {
+                console.error("Lỗi fetch cart", res.status, res.statusText);
+                return;
+            }
+
+            const data = await parseJsonResponse(res);
+            if (!data) {
+                console.error("Lỗi fetch cart: response rỗng hoặc không phải JSON");
+                return;
+            }
             console.log("Cart của user: ", data.result);
             setCart(data.result);
         } catch (error) {
@@ -176,7 +207,16 @@ const Cart = () => {
                 }
             );
 
-            const data = await res.json();
+            if (!res.ok) {
+                console.error("Lỗi tăng số lượng", res.status, res.statusText);
+                return;
+            }
+
+            const data = await parseJsonResponse(res);
+            if (!data) {
+                console.error("Lỗi tăng số lượng: response rỗng hoặc không phải JSON");
+                return;
+            }
 
             setCartItems((prev) =>
                 prev.map((item) =>
@@ -195,7 +235,7 @@ const Cart = () => {
                 }
             );
 
-            const dataCart = await resCart.json();
+            await parseJsonResponse(resCart);
             if (resCart.ok) {
                 window.dispatchEvent(new Event("cartUpdated"));
             }
@@ -219,7 +259,12 @@ const Cart = () => {
                 }
             );
 
-            const data = await res.json();
+            if (!res.ok) {
+                console.error("Lỗi giảm số lượng", res.status, res.statusText);
+                return;
+            }
+
+            const data = await parseJsonResponse(res);
             if (!data || data.quantity === 0) {
                 setCartItems((prev) => prev.filter((i) => i.id !== cartDetailId));
                 const resCart = await fetch(
@@ -234,7 +279,7 @@ const Cart = () => {
                     }
                 );
 
-                const dataCart = await resCart.json();
+                await parseJsonResponse(resCart);
                 if (resCart.ok) {
                     window.dispatchEvent(new Event("cartUpdated"));
                 }
@@ -257,7 +302,7 @@ const Cart = () => {
                 }
             );
 
-            const dataCart = await resCart.json();
+            await parseJsonResponse(resCart);
             if (resCart.ok) {
                 window.dispatchEvent(new Event("cartUpdated"));
             }
@@ -295,7 +340,7 @@ const Cart = () => {
                     }
                 );
 
-                const dataCart = await resCart.json();
+                await parseJsonResponse(resCart);
                 if (resCart.ok) {
                     window.dispatchEvent(new Event("cartUpdated"));
                 }

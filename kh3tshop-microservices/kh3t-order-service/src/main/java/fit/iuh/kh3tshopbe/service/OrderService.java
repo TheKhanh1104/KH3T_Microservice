@@ -10,9 +10,9 @@ import fit.iuh.kh3tshopbe.dto.response.OrderResponse;
 import fit.iuh.kh3tshopbe.dto.response.TimeSlotStatisticResponse;
 import fit.iuh.kh3tshopbe.entities.CustomerTrading;
 import fit.iuh.kh3tshopbe.entities.Order;
-import fit.iuh.kh3tshopbe.enums.StatusOrdering;
 import fit.iuh.kh3tshopbe.exception.AppException;
 import fit.iuh.kh3tshopbe.exception.ErrorCode;
+import fit.iuh.kh3tshopbe.enums.StatusOrdering;
 import fit.iuh.kh3tshopbe.mapper.CustomerTradingMapper;
 import fit.iuh.kh3tshopbe.mapper.OrderMapper;
 import fit.iuh.kh3tshopbe.repository.OrderRepository;
@@ -51,6 +51,9 @@ public class OrderService {
 
     public OrderResponse createOrder(OrderRequest request) throws ParseException {
         CustomerTrading ct = customerTradingService.getCustomerTradingById(request.getCustomerTradingId());
+        if (ct == null) {
+            throw new AppException(ErrorCode.CUSTOMER_NOT_FOUND);
+        }
         
         ApiResponse<AccountResponse> accountRes = identityClient.getAccountById(request.getAccount_id());
         if (accountRes == null || accountRes.getResult() == null) {

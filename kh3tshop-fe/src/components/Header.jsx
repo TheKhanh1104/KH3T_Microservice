@@ -23,6 +23,36 @@ export default function Header() {
   const searchRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  const parseJsonResponse = async (response) => {
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const sessionAlive = sessionStorage.getItem("session_alive");
+
+    if (!sessionAlive) {
+      // Tab mới hoặc browser vừa bật → logout
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      // Đánh dấu phiên đang hoạt động
+      sessionStorage.setItem("session_alive", "true");
+
+      console.log("Tab/browser mới → auto logout");
+    } else {
+      console.log("Reload hoặc chuyển trang → giữ trạng thái đăng nhập");
+    }
+  }, []);
+
   // Kiểm tra đăng nhập
   useEffect(() => {
     const checkAuth = () => {
@@ -57,10 +87,20 @@ export default function Header() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (res.ok) {
-        const data = await res.json();
-        console.log("Tài khoản đang login: ", data.result);
-        setUser(data.result);
+      if (!res.ok) {
+        console.error("Lỗi fetch user", res.status, res.statusText);
+        return;
+      }
+
+      const data = await parseJsonResponse(res);
+      if (!data) {
+        console.error("Lỗi fetch user: response rỗng hoặc không phải JSON");
+        return;
+      }
+      console.log("Tài khoản đang login: ", data.result);
+      setUser(data.result);
+      if (data?.result?.id != null) {
+        localStorage.setItem("userId", String(data.result.id));
       }
     } catch (error) {
       console.error("Lỗi fetch user", error);
@@ -83,7 +123,16 @@ export default function Header() {
           },
         }
       );
-      const data = await res.json();
+      if (!res.ok) {
+        console.error("Lỗi fetch cart", res.status, res.statusText);
+        return;
+      }
+
+      const data = await parseJsonResponse(res);
+      if (!data) {
+        console.error("Lỗi fetch cart: response rỗng hoặc không phải JSON");
+        return;
+      }
       console.log("Cart của user: ", data.result);
       setCart(data.result);
     } catch (error) {
@@ -105,7 +154,7 @@ export default function Header() {
     };
     window.addEventListener("cartUpdated", handleCartUpdated);
     return () => window.removeEventListener("cartUpdated", handleCartUpdated);
-  });
+  }, [user?.id]);
 
   // Đóng dropdown khi click ngoài
   useEffect(() => {

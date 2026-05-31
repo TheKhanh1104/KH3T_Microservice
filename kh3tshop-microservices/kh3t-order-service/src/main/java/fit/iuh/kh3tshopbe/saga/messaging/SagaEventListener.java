@@ -22,14 +22,13 @@ public class SagaEventListener {
     public void onPaymentCharged(OrderEvent event) {
         sagaOrderService.onPaymentCharged(event.getOrderId());
     }
-
     @KafkaListener(topics = SagaCoordinator.PAYMENT_FAILED_TOPIC, groupId = "order-service")
     public void onPaymentFailed(OrderEvent event) {
-        sagaOrderService.cancelOrder(event.getOrderId());
+        sagaOrderService.onPaymentFailed(event.getOrderId());
     }
 
     @KafkaListener(topics = SagaCoordinator.INVENTORY_FAILED_TOPIC, groupId = "order-service")
     public void onInventoryFailed(OrderEvent event) {
-        sagaOrderService.cancelOrder(event.getOrderId());
+        sagaOrderService.onInventoryFailed(event.getOrderId());
     }
 }

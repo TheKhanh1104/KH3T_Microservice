@@ -26,6 +26,7 @@ public class SagaOrderService {
     private final SagaOrderRepository orderRepository;
     private final OrderStateMachine stateMachine;
     private final SagaCoordinator coordinator;
+    private final fit.iuh.kh3tshopbe.notification.OrderNotificationService notificationService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -45,6 +46,7 @@ public class SagaOrderService {
 
         SagaOrder saved = orderRepository.save(order);
         coordinator.publish(SagaCoordinator.ORDER_CREATED_TOPIC, toEvent(saved, OrderEventType.ORDER_CREATED));
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
         return toResponse(saved);
     }
 
@@ -58,6 +60,20 @@ public class SagaOrderService {
         order.setUpdatedAt(LocalDateTime.now());
         SagaOrder saved = orderRepository.save(order);
         coordinator.publish(SagaCoordinator.ORDER_CANCELLED_TOPIC, toEvent(saved, OrderEventType.ORDER_CANCELLED));
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public OrderResponse confirmOrder(UUID orderId) {
+        SagaOrder order = getRequiredOrder(orderId);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidStateTransitionException(order.getStatus(), OrderStatus.CONFIRMED);
+        }
+        stateMachine.transition(order, OrderStatus.CONFIRMED);
+        SagaOrder saved = orderRepository.save(order);
+        coordinator.publish(SagaCoordinator.PAYMENT_REQUESTED_TOPIC, toEvent(saved, OrderEventType.PAYMENT_REQUESTED));
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
         return toResponse(saved);
     }
 
@@ -67,6 +83,7 @@ public class SagaOrderService {
         stateMachine.transition(order, OrderStatus.SHIPPING);
         SagaOrder saved = orderRepository.save(order);
         coordinator.publish(SagaCoordinator.ORDER_SHIPPED_TOPIC, toEvent(saved, OrderEventType.ORDER_SHIPPED));
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
         return toResponse(saved);
     }
 
@@ -75,6 +92,7 @@ public class SagaOrderService {
         SagaOrder order = getRequiredOrder(orderId);
         stateMachine.transition(order, OrderStatus.DELIVERED);
         SagaOrder saved = orderRepository.save(order);
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
         return toResponse(saved);
     }
 
@@ -87,6 +105,7 @@ public class SagaOrderService {
         stateMachine.transition(order, OrderStatus.CONFIRMED);
         SagaOrder saved = orderRepository.save(order);
         coordinator.publish(SagaCoordinator.PAYMENT_REQUESTED_TOPIC, toEvent(saved, OrderEventType.PAYMENT_REQUESTED));
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
     }
 
     @Transactional
@@ -97,6 +116,30 @@ public class SagaOrderService {
         }
         stateMachine.transition(order, OrderStatus.PAID);
         orderRepository.save(order);
+        notificationService.sendUpdate(order.getUserId(), toResponse(order));
+    }
+
+    @Transactional
+    public void onPaymentFailed(UUID orderId) {
+        SagaOrder order = getRequiredOrder(orderId);
+        // Only handle if we were waiting for payment
+        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.PENDING) {
+            return;
+        }
+        // publish inventory release (compensation) and mark order failed
+        coordinator.publish(SagaCoordinator.INVENTORY_RELEASE_TOPIC, toEvent(order, OrderEventType.PAYMENT_FAILED));
+        stateMachine.transition(order, OrderStatus.FAILED);
+        orderRepository.save(order);
+        notificationService.sendUpdate(order.getUserId(), toResponse(order));
+    }
+
+    @Transactional
+    public void onInventoryFailed(UUID orderId) {
+        SagaOrder order = getRequiredOrder(orderId);
+        if (order.getStatus() == OrderStatus.FAILED) return;
+        stateMachine.transition(order, OrderStatus.FAILED);
+        orderRepository.save(order);
+        notificationService.sendUpdate(order.getUserId(), toResponse(order));
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +150,11 @@ public class SagaOrderService {
     @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
         return orderRepository.findAllByOrderByCreatedAtDesc().stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByUserId(UUID userId) {
+        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream().map(this::toResponse).toList();
     }
 
     private SagaOrder getRequiredOrder(UUID orderId) {

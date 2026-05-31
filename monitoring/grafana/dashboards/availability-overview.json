@@ -1,0 +1,68 @@
+{
+  "uid": "kh3t-availability-overview",
+  "title": "KH3T Availability Overview",
+  "tags": ["availability", "spring", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Healthy Spring Targets",
+      "id": 1,
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        {
+          "expr": "sum(up{job=\"spring-actuator\"})",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Target Health (up)",
+      "id": 2,
+      "gridPos": { "x": 8, "y": 0, "w": 16, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        {
+          "expr": "up{job=\"spring-actuator\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Process Uptime (seconds)",
+      "id": 3,
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        {
+          "expr": "process_uptime_seconds{job=\"spring-actuator\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

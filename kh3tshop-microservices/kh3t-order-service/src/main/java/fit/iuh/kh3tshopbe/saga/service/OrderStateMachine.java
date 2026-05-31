@@ -16,8 +16,8 @@ public class OrderStateMachine {
     private static final Map<OrderStatus, List<OrderStatus>> ALLOWED = new EnumMap<>(OrderStatus.class);
 
     static {
-        ALLOWED.put(OrderStatus.PENDING, List.of(OrderStatus.CONFIRMED, OrderStatus.CANCELLED));
-        ALLOWED.put(OrderStatus.CONFIRMED, List.of(OrderStatus.PAID, OrderStatus.CANCELLED));
+        ALLOWED.put(OrderStatus.PENDING, List.of(OrderStatus.CONFIRMED, OrderStatus.CANCELLED, OrderStatus.FAILED));
+        ALLOWED.put(OrderStatus.CONFIRMED, List.of(OrderStatus.PAID, OrderStatus.CANCELLED, OrderStatus.FAILED));
         ALLOWED.put(OrderStatus.PAID, List.of(OrderStatus.SHIPPING));
         ALLOWED.put(OrderStatus.SHIPPING, List.of(OrderStatus.DELIVERED));
     }

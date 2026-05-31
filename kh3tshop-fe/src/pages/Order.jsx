@@ -22,21 +22,84 @@ const Order = () => {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-
-      const res = await fetch(
-        `/api/orders/account/${userId}`,
-        {
+      let resolvedUserId = userId;
+      if (!resolvedUserId) {
+        const meRes = await fetch(`/api/accounts/myinfor`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          resolvedUserId = meData?.result?.id ? String(meData.result.id) : null;
+          if (resolvedUserId) {
+            localStorage.setItem("userId", resolvedUserId);
+          }
         }
-      );
+      }
+
+      if (!resolvedUserId) {
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
+      const sagaRes = await fetch(`/api/orders/saga/user/${encodeURIComponent(resolvedUserId)}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (sagaRes.ok) {
+        const sagaData = await sagaRes.json();
+        setOrders(
+          sagaData.map((order) => ({
+            id: order.id,
+            orderCode: order.id,
+            orderDate: order.createdAt,
+            statusOrder: order.status,
+            paymentMethod: order.paymentMethod || "CASH",
+            note: order.note || "",
+            totalAmount: order.totalAmount,
+            customerTrading: {
+              receiverName: order.userId,
+            },
+            orderDetails: (order.items || []).map((item) => ({
+              id: item.id,
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.unitPrice * item.quantity,
+            })),
+          }))
+        );
+        return;
+      }
+
+      console.warn("Saga orders request failed, falling back to legacy orders API");
+
+      const res = await fetch(`/api/orders/account/${resolvedUserId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.statusText);
+        console.error("Legacy orders API failed:", res.status, errText);
+        setOrders([]);
+        return;
+      }
 
       const data = await res.json();
-      setOrders(data);
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching orders:", error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -113,11 +176,14 @@ const Order = () => {
   const getFilteredOrders = () => {
     if (activeTab === "all") return orders;
     if (activeTab === "pending")
-      return orders.filter((o) => o.statusOrder === "PENDING");
+      return orders.filter((o) => (o.statusOrder || o.status) === "PENDING");
     if (activeTab === "confirmed")
-      return orders.filter((o) => o.statusOrder === "CONFIRMED");
+      return orders.filter((o) => (o.statusOrder || o.status) === "CONFIRMED");
     return orders;
   };
+
+  const isUuid = (value) =>
+    typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
   const filteredOrders = getFilteredOrders();
 
@@ -146,14 +212,23 @@ const Order = () => {
                 try {
                   const token = localStorage.getItem("accessToken");
 
-                  await fetch(`/api/orders/status/${id}`, {
-                    method: "PUT",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ statusOrder: "CANCELLED" }),
-                  });
+                  if (isUuid(id)) {
+                    await fetch(`/api/orders/${id}/cancel`, {
+                      method: "PUT",
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                  } else {
+                    await fetch(`/api/orders/status/${id}`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ statusOrder: "CANCELLED" }),
+                    });
+                  }
 
                   await fetchOrders();
 
@@ -248,7 +323,7 @@ const Order = () => {
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.statusOrder);
+              const statusInfo = getStatusInfo(order.statusOrder || order.status);
               return (
                 <div
                   key={order.id}
@@ -258,10 +333,10 @@ const Order = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                       <div className="text-sm">
                         <p className="font-semibold text-gray-900">
-                          Order Code: {order.orderCode}
+                          Order Code: {order.orderCode || order.id}
                         </p>
                         <p className="text-gray-600 mt-1">
-                          Order Date: {formatDate(order.orderDate)}
+                          Order Date: {formatDate(order.orderDate || order.createdAt)}
                         </p>
                       </div>
 
@@ -278,25 +353,25 @@ const Order = () => {
                         <div>
                           <span className="text-gray-600">Receiver: </span>
                           <span className="font-medium">
-                            {order.customerTrading.receiverName}
+                            {order.customerTrading?.receiverName || "N/A"}
                           </span>
                         </div>
                         <div>
                           <span className="text-gray-600">Phone: </span>
                           <span className="font-medium">
-                            {order.customerTrading.receiverPhone}
+                            {order.customerTrading?.receiverPhone || "N/A"}
                           </span>
                         </div>
                         <div className="sm:col-span-2">
                           <span className="text-gray-600">Address: </span>
                           <span className="font-medium">
-                            {order.customerTrading.receiverAddress}
+                            {order.customerTrading?.receiverAddress || "N/A"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <DollarSign size={16} className="text-gray-600" />
                           <span className="font-medium">
-                            {getPaymentMethodLabel(order.paymentMethod)}
+                            {getPaymentMethodLabel(order.paymentMethod || "")}
                           </span>
                         </div>
                       </div>
@@ -314,7 +389,7 @@ const Order = () => {
 
                   <div className="p-4 sm:p-6">
                     <div className="space-y-4">
-                      {order.orderDetails.map((detail) => (
+                      {(order.orderDetails || order.items || []).map((detail) => (
                         <div key={detail.id} className="flex gap-4">
                           <div className="flex-1 min-w-0">
                             <h4
@@ -359,16 +434,16 @@ const Order = () => {
                         <p className="text-sm text-gray-600">Total Amount:</p>
                         <p className="text-2xl font-bold text-red-500">
                           {formatPrice(
-                            order.orderDetails.reduce(
-                              (sum, detail) => sum + detail.totalPrice,
+                            ((order.orderDetails || order.items || []).reduce(
+                              (sum, detail) => sum + (detail.totalPrice || detail.quantity * detail.unitPrice || 0),
                               0
-                            ) + 30000
+                            )) + 30000
                           )}
                         </p>
                       </div>
 
                       <div className="flex gap-3 flex-wrap">
-                        {order.statusOrder === "PENDING" && (
+                        {(order.statusOrder || order.status) === "PENDING" && (
                           <button
                             className="px-6 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition"
                             onClick={() => handleCancel(order.id)}
@@ -377,13 +452,13 @@ const Order = () => {
                           </button>
                         )}
 
-                        {order.statusOrder === "COMPLETED" && (
+                        {(order.statusOrder || order.status) === "COMPLETED" && (
                           <button className="px-6 py-2 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition">
                             Buy Again
                           </button>
                         )}
 
-                        {order.statusOrder === "SHIPPING" && (
+                        {(order.statusOrder || order.status) === "SHIPPING" && (
                           <button className="px-6 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 transition">
                             Track Order
                           </button>

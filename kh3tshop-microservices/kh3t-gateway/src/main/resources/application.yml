@@ -42,7 +42,10 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "http://localhost:5173"
+            allowedOrigins: 
+              - "http://localhost:5173"
+              - "https://kh3tshop-fe.vercel.app"
+              - "https://kh3tshop-k08vijg7u-thanh123aaas-projects.vercel.app"
             allowedMethods:
               - GET
               - POST

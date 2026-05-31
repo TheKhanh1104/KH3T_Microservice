@@ -113,6 +113,7 @@ public class OrderController {
         java.util.UUID userUuid = java.util.UUID.nameUUIDFromBytes(String.valueOf(orderRequest.getAccount_id()).getBytes());
         var sagaReq = fit.iuh.kh3tshopbe.saga.dto.CreateOrderRequest.builder()
             .userId(userUuid)
+            .customerTradingId(orderRequest.getCustomerTradingId())
             .items(items)
             .build();
 

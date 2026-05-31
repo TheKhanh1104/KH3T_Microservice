@@ -27,6 +27,7 @@ public class SagaOrderService {
     private final OrderStateMachine stateMachine;
     private final SagaCoordinator coordinator;
     private final fit.iuh.kh3tshopbe.notification.OrderNotificationService notificationService;
+    private final fit.iuh.kh3tshopbe.service.CustomerTradingService customerTradingService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -36,6 +37,7 @@ public class SagaOrderService {
 
         SagaOrder order = SagaOrder.builder()
                 .userId(request.getUserId())
+                .customerTradingId(request.getCustomerTradingId())
                 .status(OrderStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -198,9 +200,19 @@ public class SagaOrderService {
     }
 
     private OrderResponse toResponse(SagaOrder order) {
+        fit.iuh.kh3tshopbe.entities.CustomerTrading customerTrading = null;
+        if (order.getCustomerTradingId() != null) {
+            try {
+                customerTrading = customerTradingService.getCustomerTradingById(order.getCustomerTradingId());
+            } catch (Exception e) {
+                System.err.println("Failed to fetch customer trading for ID " + order.getCustomerTradingId() + ": " + e.getMessage());
+            }
+        }
+
         return OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUserId())
+                .customerTrading(customerTrading)
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
                 .createdAt(order.getCreatedAt())

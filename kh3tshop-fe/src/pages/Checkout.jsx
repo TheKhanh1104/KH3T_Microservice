@@ -405,24 +405,33 @@ const Checkout = () => {
                 const cartData = await cartRes.json();
                 const cartId = cartData.result?.id;
                 if (cartId) {
-                  for (const item of selectedCartItems) {
-                    // Xóa chi tiết sản phẩm trong giỏ hàng ở Database
-                    await fetch(`/api/cart-details/delete/${item.id}`, {
+                  let totalDeletedPrice = 0;
+                  let totalDeletedQuantity = 0;
+
+                  // Xóa song song tất cả cart-details đã chọn
+                  const deletePromises = selectedCartItems.map((item) => {
+                    totalDeletedPrice += item.subtotal;
+                    totalDeletedQuantity += item.quantity;
+
+                    return fetch(`/api/cart-details/delete/${item.id}`, {
                       method: "DELETE",
                       headers: {
                         Authorization: `Bearer ${token}`,
                       },
                     });
-                    // Cập nhật lại tổng số lượng và tiền trong Database Cart
-                    await fetch(`/api/carts/update/${cartId}/delete`, {
-                      method: "PUT",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({ price: item.subtotal, quantity: item.quantity }),
-                    });
-                  }
+                  });
+
+                  await Promise.all(deletePromises);
+
+                  // Gọi DUY NHẤT 1 LẦN cập nhật tổng số lượng và tiền của giỏ hàng
+                  await fetch(`/api/carts/update/${cartId}/delete`, {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ price: totalDeletedPrice, quantity: totalDeletedQuantity }),
+                  });
                 }
               }
             } catch (dbCartErr) {

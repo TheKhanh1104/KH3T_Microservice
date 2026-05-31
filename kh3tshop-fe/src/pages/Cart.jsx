@@ -96,13 +96,26 @@ const Cart = () => {
 
     useEffect(() => {
         fetchUser();
+        
+        // Tối ưu hóa: Load nhanh giỏ hàng song song nếu có user trong localStorage
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                if (parsed && parsed.id) {
+                    fetchCartForUser(parsed.id);
+                }
+            } catch (e) {
+                console.warn("Lỗi parse user từ localStorage:", e);
+            }
+        }
     }, []);
 
-    const fetchCart = async () => {
+    const fetchCartForUser = async (userId) => {
         try {
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
-                `/api/carts/account/${user.id}`,
+                `/api/carts/account/${userId}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -129,7 +142,7 @@ const Cart = () => {
 
     useEffect(() => {
         if (user?.id) {
-            fetchCart();
+            fetchCartForUser(user.id);
         }
     }, [user]);
 

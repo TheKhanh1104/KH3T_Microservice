@@ -76,7 +76,7 @@ const Order = () => {
               paymentMethod: order.paymentMethod || "CASH",
               note: order.note || "",
               totalAmount: order.totalAmount,
-              customerTrading: {
+              customerTrading: order.customerTrading || {
                 receiverName: order.userId,
               },
               orderDetails: (Array.isArray(order.items) ? order.items : []).map((item) => ({

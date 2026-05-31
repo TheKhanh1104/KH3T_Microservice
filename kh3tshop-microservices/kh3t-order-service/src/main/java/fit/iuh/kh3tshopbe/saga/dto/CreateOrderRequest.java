@@ -19,6 +19,8 @@ public class CreateOrderRequest {
     @NotNull
     private UUID userId;
 
+    private Integer customerTradingId;
+
     @NotEmpty
     @Valid
     private List<OrderItemDTO> items;

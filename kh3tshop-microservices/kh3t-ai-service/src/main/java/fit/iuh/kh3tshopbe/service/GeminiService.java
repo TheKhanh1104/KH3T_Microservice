@@ -18,8 +18,7 @@ public class GeminiService {
             "meta-llama/llama-3.2-3b-instruct:free",
             "meta-llama/llama-3.1-8b-instruct:free",
             "qwen/qwen-2.5-7b-instruct:free",
-            "google/gemma-2-9b-it:free"
-    );
+            "google/gemma-2-9b-it:free");
 
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
@@ -36,15 +35,8 @@ public class GeminiService {
 
     @PostConstruct
     public void init() {
-        String finalUrl = baseUrl;
-        if (finalUrl == null || finalUrl.isBlank()) {
-            finalUrl = "https://openrouter.ai/api/v1/";
-        }
-        if (!finalUrl.endsWith("/")) {
-            finalUrl += "/";
-        }
-        this.webClient = webClientBuilder.baseUrl(finalUrl).build();
-        System.out.println("=== AI Service BASE URL: " + finalUrl + " ===");
+        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
+        System.out.println("=== AI Service BASE URL: " + baseUrl + " ===");
     }
 
     public String generateRawText(String prompt) {
@@ -53,10 +45,9 @@ public class GeminiService {
         }
 
         if (apiKey == null || apiKey.isBlank()) {
-            return "HỆ THỐNG: API Key chưa được nạp. Vui lòng kiểm tra môi trường hoặc cấu hình GEMINI_API_KEY trên Render.";
+            return "HỆ THỐNG: API Key chưa được nạp. Vui lòng kiểm tra môi trường hoặc file .env.";
         }
 
-        StringBuilder errorLog = new StringBuilder();
         for (String model : FALLBACK_MODELS) {
             try {
                 String result = callModel(model, prompt);
@@ -66,22 +57,20 @@ public class GeminiService {
                 }
             } catch (WebClientResponseException e) {
                 int status = e.getStatusCode().value();
-                String body = e.getResponseBodyAsString();
-                String errMsg = String.format("Model %s failed: HTTP %d - %s", model, status, body);
-                System.err.println("=== " + errMsg + " ===");
-                errorLog.append("- ").append(errMsg).append("\n");
+                System.out.println("=== Model " + model + " failed with " + status + ", trying next... ===");
+                if (status != 429 && status != 503 && status != 404) {
+                    throw e;
+                }
             } catch (Exception e) {
-                String errMsg = String.format("Model %s error: %s", model, e.getMessage());
-                System.err.println("=== " + errMsg + " ===");
-                errorLog.append("- ").append(errMsg).append("\n");
+                System.out.println("=== Model " + model + " error: " + e.getMessage() + ", trying next... ===");
             }
         }
-        
-        // Thay vì trả về null làm hiển thị "Dạ em chưa hiểu lắm ạ!", trả về thông tin lỗi chi tiết để dev/user dễ chẩn đoán
-        return "Dạ hệ thống AI đang gặp lỗi kết nối đến OpenRouter. Chi tiết kỹ thuật:\n" + errorLog.toString();
+        return null;
     }
 
     public String generateText(String prompt) {
+        // Giữ lại phương thức này để không làm hỏng các code cũ nếu có,
+        // nhưng bên trong sẽ gọi generateRawText
         if (prompt == null || prompt.isBlank()) {
             return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
         }
@@ -93,31 +82,34 @@ public class GeminiService {
         Map<String, Object> requestBody = Map.of(
                 "model", model,
                 "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                )
-        );
+                        Map.of("role", "user", "content", prompt)));
 
         Map<String, Object> response = webClient.post()
-                .uri("chat/completions") // Sử dụng relative URI để tránh bị WebClient loại bỏ '/api/v1' của baseUrl
+                .uri("/chat/completions")
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .header("HTTP-Referer", "http://localhost:8080")
                 .header("X-Title", "KH3T Shop")
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                })
                 .block();
 
-        if (response == null || !response.containsKey("choices")) return null;
+        if (response == null || !response.containsKey("choices"))
+            return null;
 
         List<?> choices = (List<?>) response.get("choices");
-        if (choices == null || choices.isEmpty()) return null;
+        if (choices == null || choices.isEmpty())
+            return null;
 
         Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
-        if (firstChoice == null) return null;
+        if (firstChoice == null)
+            return null;
 
         Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
-        if (message == null) return null;
+        if (message == null)
+            return null;
 
         Object content = message.get("content");
         return content == null ? null : content.toString().trim();

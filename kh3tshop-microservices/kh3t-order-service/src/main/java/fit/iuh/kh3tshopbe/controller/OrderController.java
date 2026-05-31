@@ -28,6 +28,8 @@ import java.util.UUID;
 public class OrderController {
     OrderService orderService;
     SagaOrderService sagaOrderService;
+    fit.iuh.kh3tshopbe.service.CartService cartService;
+    fit.iuh.kh3tshopbe.service.CustomerTradingService customerTradingService;
 
     @GetMapping
     public List<OrderResponse> getAllOrders() {
@@ -49,6 +51,22 @@ public class OrderController {
         return ResponseEntity.ok(sagaOrderService.getOrderById(id));
     }
 
+    @PutMapping("/saga/{id}/confirm")
+    public ResponseEntity<fit.iuh.kh3tshopbe.saga.dto.OrderResponse> confirmSagaOrder(@PathVariable UUID id) {
+        return ResponseEntity.ok(sagaOrderService.confirmOrder(id));
+    }
+
+    @GetMapping("/saga/user/{userId}")
+    public ResponseEntity<List<fit.iuh.kh3tshopbe.saga.dto.OrderResponse>> getSagaOrdersByUser(@PathVariable String userId) {
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(userId);
+        } catch (IllegalArgumentException ex) {
+            uuid = UUID.nameUUIDFromBytes(userId.getBytes());
+        }
+        return ResponseEntity.ok(sagaOrderService.getOrdersByUserId(uuid));
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<fit.iuh.kh3tshopbe.saga.dto.OrderResponse> cancelSagaOrder(@PathVariable UUID id) {
         return ResponseEntity.ok(sagaOrderService.cancelOrder(id));
@@ -64,10 +82,43 @@ public class OrderController {
         return ResponseEntity.ok(sagaOrderService.deliverOrder(id));
     }
 
-    @PostMapping("/create")
-    public OrderResponse createOrder(@RequestBody OrderRequest orderRequest) throws ParseException {
-        return orderService.createOrder(orderRequest);
-    }
+        @PostMapping("/create")
+        public ResponseEntity<fit.iuh.kh3tshopbe.saga.dto.OrderResponse> createOrder(@RequestBody OrderRequest orderRequest) throws ParseException {
+        var customerTrading = customerTradingService.getCustomerTradingById(orderRequest.getCustomerTradingId());
+            // Prefer items provided by FE; fall back to cart contents if not present.
+            var requestItems = orderRequest.getItems();
+            var items = (requestItems != null && !requestItems.isEmpty())
+                ? requestItems.stream()
+                    .map(i -> fit.iuh.kh3tshopbe.saga.dto.OrderItemDTO.builder()
+                        .productId(i.getProductId())
+                        .productName(i.getProductName())
+                        .quantity(i.getQuantity())
+                        .unitPrice(i.getUnitPrice())
+                        .size(i.getSize())
+                        .build())
+                    .toList()
+                : java.util.Optional.ofNullable(cartService.getCartByAccountId(orderRequest.getAccount_id()).getCart_details())
+                    .orElse(java.util.List.of())
+                    .stream()
+                    .filter(f -> f.isSelected())
+                    .map(cd -> fit.iuh.kh3tshopbe.saga.dto.OrderItemDTO.builder()
+                        .productId(String.valueOf(cd.getProductId()))
+                        .productName("") // product name can be enriched by catalog service
+                        .quantity(cd.getQuantity())
+                        .unitPrice(cd.getPrice_at_time())
+                        .size(String.valueOf(cd.getSizeDetailId()))
+                        .build())
+                    .toList();
+
+        java.util.UUID userUuid = java.util.UUID.nameUUIDFromBytes(String.valueOf(orderRequest.getAccount_id()).getBytes());
+        var sagaReq = fit.iuh.kh3tshopbe.saga.dto.CreateOrderRequest.builder()
+            .userId(userUuid)
+            .items(items)
+            .build();
+
+        var resp = sagaOrderService.createOrder(sagaReq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+        }
 
     @PutMapping("/status/{id}")
     public OrderResponse updateOrderStatus(@PathVariable int id, @RequestBody UpdateOrderStatusRequest request) {

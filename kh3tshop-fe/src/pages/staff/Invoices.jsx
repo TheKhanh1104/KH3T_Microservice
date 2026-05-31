@@ -19,13 +19,70 @@ export default function Invoices() {
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/invoices");
-      if (!res.ok) {
+      const token = localStorage.getItem("accessToken");
+
+      const parseJsonResponse = async (response) => {
+        const text = await response.text();
+        if (!text) return null;
+        try {
+          return JSON.parse(text);
+        } catch {
+          return null;
+        }
+      };
+
+      const normalizeSagaInvoice = (inv) => {
+        // Map potential saga invoice shape to the shape expected by the UI
+        return {
+          id: inv.id || inv.invoiceId || inv._id || inv.invoice_code || null,
+          invoiceCode: inv.invoiceCode || inv.invoice_code || inv.code || "",
+          order: inv.order || (inv.orderId ? { orderCode: inv.orderId } : null),
+          createdAt: inv.createdAt || inv.createDate || inv.created_at || inv.created || null,
+          paymentMethod: inv.paymentMethod || inv.method || inv.payment_method,
+          paymentStatus: inv.paymentStatus || inv.status || inv.payment_status,
+          totalAmount: inv.totalAmount || inv.total_amount || inv.amount || 0,
+          customerName: inv.customerName || inv.customer_name || inv.name || null,
+          customerPhone: inv.customerPhone || inv.customer_phone || inv.phone || null,
+          customerEmail: inv.customerEmail || inv.customer_email || inv.email || null,
+          transactionId: inv.transactionId || inv.txId || inv.transaction_id || null,
+          notes: inv.notes || inv.note || null,
+          paidAt: inv.paidAt || inv.paid_at || null,
+        };
+      };
+
+      // Try to fetch both legacy and saga invoices (saga endpoint may not exist yet)
+      const [legacyRes, sagaRes] = await Promise.all([
+        fetch("/api/invoices", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch("/api/invoices/saga", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }).catch(() => ({ ok: false })),
+      ]);
+
+      if (!legacyRes.ok && !sagaRes.ok) {
         alert("Cannot load invoices");
         return;
       }
-      const data = await res.json();
-      setInvoices(Array.isArray(data) ? data : data?.result || []);
+
+      const legacyData = legacyRes.ok ? await parseJsonResponse(legacyRes) : [];
+      const sagaData = sagaRes.ok ? await parseJsonResponse(sagaRes) : [];
+
+      const legacyInvoices = Array.isArray(legacyData) ? legacyData : legacyData?.result || [];
+      const sagaInvoices = Array.isArray(sagaData) ? sagaData : sagaData?.result || [];
+
+      const merged = [
+        ...legacyInvoices,
+        ...sagaInvoices.map(normalizeSagaInvoice),
+      ];
+
+      setInvoices(merged);
     } catch (error) {
       console.error("Error loading invoices:", error);
       alert("Error loading invoices");

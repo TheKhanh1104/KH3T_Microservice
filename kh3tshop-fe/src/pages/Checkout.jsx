@@ -2,6 +2,29 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 
+// Helper to fetch and surface server error bodies in logs/toasts
+async function safeFetch(url, options = {}, label = url) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    let text;
+    try {
+      text = await res.text();
+    } catch (e) {
+      text = res.statusText;
+    }
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && parsed.message) message = parsed.message;
+    } catch (e) {
+      // not json
+    }
+    console.error(`${label} failed:`, res.status, message);
+    throw new Error(message || `HTTP ${res.status}`);
+  }
+  return res;
+}
+
 const formatVND = (amount) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -31,7 +54,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [addresses, setAddresses] = useState([]);
-  const userId = location.state?.userId;
+  const userId = location.state?.userId ?? localStorage.getItem("userId");
   const product = location.state?.product;
   const quantity = location.state?.quantity;
   const selectedCartItems = location.state?.select || [];
@@ -70,13 +93,14 @@ const Checkout = () => {
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
+        if (!userId) return;
         const token = localStorage.getItem("accessToken");
-        const res = await fetch(`/api/addresses/${userId}`, {
+        const res = await safeFetch(`/api/addresses/${userId}`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        });
+        }, 'GET /api/addresses/{userId}');
 
         const data = await res.json();
         setAddresses(data);
@@ -89,18 +113,20 @@ const Checkout = () => {
 
   useEffect(() => {
     const handleFetchCustomer = async () => {
+      if (!userId) return;
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`/api/customers/${userId}`, {
+      const res = await safeFetch(`/api/customers/${userId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      });
-      const customer = await res.json();
+      }, 'GET /api/customers/{userId}');
+      const text = await res.text();
+      const customer = text ? JSON.parse(text) : {};
       setForm({
-        name: customer.fullName,
-        phone: customer.phoneNumber,
-        email: customer.email,
+        name: customer.fullName || "",
+        phone: customer.phoneNumber || "",
+        email: customer.email || "",
       });
     };
     handleFetchCustomer();
@@ -154,6 +180,31 @@ const Checkout = () => {
         toast.warning("Vui lòng chọn phương thức thanh toán!!!");
       } else {
         const token = localStorage.getItem("accessToken");
+        let resolvedUserId = userId;
+        if (!resolvedUserId) {
+          const meRes = await safeFetch(
+            "/api/accounts/myinfor",
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            },
+            "GET /api/accounts/myinfor"
+          );
+          const meText = await meRes.text();
+          const meData = meText ? JSON.parse(meText) : null;
+          resolvedUserId = meData?.result?.id ? String(meData.result.id) : null;
+          if (resolvedUserId) {
+            localStorage.setItem("userId", resolvedUserId);
+          }
+        }
+
+        if (!resolvedUserId) {
+          toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại.");
+          return;
+        }
+
         const fullAddress = `${form.address}${
           form.ward ? ", " + form.ward : ""
         }, ${form.province}`;
@@ -178,7 +229,7 @@ const Checkout = () => {
           };
         }
 
-        const res = await fetch(
+        const res = await safeFetch(
           "/api/customer-trading/create",
           {
             method: "POST",
@@ -187,10 +238,9 @@ const Checkout = () => {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(requestBody),
-          }
+          },
+          'POST /api/customer-trading/create'
         );
-
-        if (!res.ok) throw new Error("Failed to create order");
 
         const data = await res.json();
         console.log(data);
@@ -199,36 +249,96 @@ const Checkout = () => {
           orderBody = {
             customerTradingId: data.id,
             note: form.note || "",
-            account_id: userId,
+            account_id: Number(resolvedUserId),
             paymentMethod: "BANK_TRANSFER",
+            items: product
+              ? [
+                  {
+                    productId: String(product.id),
+                    productName: product.name || "",
+                    quantity: quantity,
+                    unitPrice: product.costPrice,
+                    size: String(product.sizeDetailId || ""),
+                  },
+                ]
+              : selectedCartItems.map((item) => ({
+                  productId: String(item.id),
+                  productName: item.productName || "",
+                  quantity: item.quantity,
+                  unitPrice: item.priceAtTime,
+                  size: String(item.sizeDetailId || ""),
+                })),
           };
         } else {
           orderBody = {
             customerTradingId: data.id,
             note: form.note || "",
-            account_id: userId,
+            account_id: Number(resolvedUserId),
             paymentMethod: "CASH",
+            items: product
+              ? [
+                  {
+                    productId: String(product.id),
+                    productName: product.name || "",
+                    quantity: quantity,
+                    unitPrice: product.costPrice,
+                    size: String(product.sizeDetailId || ""),
+                  },
+                ]
+              : selectedCartItems.map((item) => ({
+                  productId: String(item.id),
+                  productName: item.productName || "",
+                  quantity: item.quantity,
+                  unitPrice: item.priceAtTime,
+                  size: String(item.sizeDetailId || ""),
+                })),
           };
         }
 
-        const orderRes = await fetch("/api/orders/create", {
+        const orderRes = await safeFetch("/api/orders/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(orderBody),
-        });
-
-        if (!orderRes.ok) throw new Error("Failed to create order");
+        }, 'POST /api/orders/create');
 
         const orderData = await orderRes.json();
         console.log("Order created:", orderData);
-        if (orderData.ok) {
-          toast.success("Đặt hàng thành công!!");
+        if (orderData && orderData.id) {
+          // subscribe to server-sent events for order updates
+          try {
+            const evtSource = new EventSource(`/api/orders/subscribe?userId=${resolvedUserId}`);
+            evtSource.addEventListener("order.update", (e) => {
+              try {
+                const payload = JSON.parse(e.data);
+                console.log("Order update SSE:", payload);
+                toast(`Order ${payload.id} status: ${payload.status}`);
+                if (payload.status === "PAID" || payload.status === "DELIVERED" || payload.status === "CANCELLED" || payload.status === "FAILED") {
+                  evtSource.close();
+                }
+              } catch (err) {
+                console.log("Invalid SSE payload", err);
+              }
+            });
+            evtSource.onerror = (err) => {
+              console.warn("SSE error", err);
+              evtSource.close();
+            };
+          } catch (err) {
+            console.warn("SSE unsupported", err);
+          }
         }
+
+        // determine if orderId is numeric (legacy monolith uses int ids)
+        const orderId = orderData?.id;
+        const isNumericId = typeof orderId === "number" || (/^\d+$/.test(String(orderId)));
+
+        let detailsOk = true;
         if (product) {
-          await fetch(`/api/order-details/create`, {
+          if (isNumericId) {
+            const odRes = await safeFetch(`/api/order-details/create`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -242,52 +352,71 @@ const Checkout = () => {
               orderId: orderData.id,
               productId: product.id,
             }),
-          });
-        } else {
-          for (const item of selectedCartItems) {
-            await fetch(`/api/order-details/create`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                productName: item.productName,
-                quantity: item.quantity,
-                unitPrice: item.priceAtTime,
-                totalPrice: item.subtotal,
-                orderId: orderData.id,
-                productId: item.id,
-              }),
-            });
+            }, 'POST /api/order-details/create');
+            if (!odRes.ok) {
+              detailsOk = false;
+              const err = await odRes.text().catch(() => odRes.statusText);
+              throw new Error(`Failed to create order detail: ${err}`);
+            }
+          } else {
+            console.warn("Skipping order-details.create: orderId is non-numeric (saga flow)");
           }
-          localStorage.removeItem("cartItems");
+        } else {
+          if (isNumericId) {
+            for (const item of selectedCartItems) {
+              const odRes = await safeFetch(`/api/order-details/create`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unitPrice: item.priceAtTime,
+                  totalPrice: item.subtotal,
+                  orderId: orderData.id,
+                  productId: item.id,
+                }),
+              }, 'POST /api/order-details/create');
+              if (!odRes.ok) {
+                detailsOk = false;
+                const err = await odRes.text().catch(() => odRes.statusText);
+                throw new Error(`Failed to create order detail: ${err}`);
+              }
+            }
+            localStorage.removeItem("cartItems");
+          } else {
+            console.warn("Skipping order-details.create for cart: orderId is non-numeric (saga flow)");
+            // still remove cart because saga flow will handle items server-side
+            localStorage.removeItem("cartItems");
+          }
         }
-        toast.success("Order successfull!!");
+        // If we reach here and detailsOk is true, consider order successful
+        if (detailsOk) {
+          toast.success("Order successful!!");
+        }
+
         if (payment === "bank") {
-          const orderId = orderData.id;
           const invoiceRequest = {
-            orderId: orderId,
+            orderId: orderData.id,
             paymentMethod: "BANK_TRANSFER",
             paymentStatus: "UNPAID",
           };
-          const res = await fetch("/api/invoices", {
+
+          const invRes = await safeFetch("/api/invoices", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(invoiceRequest),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || "Failed to create invoice");
-          } else {
-            const newInvoice = await res.json();
-            navigate(
-              `/payment?orderId=${orderData.id}&amount=${summary.total}&invoiceId=${newInvoice.id}&invoiceCode=${newInvoice.invoiceCode}`
-            );
-          }
+          }, 'POST /api/invoices');
+
+          const newInvoice = await invRes.json();
+          navigate(
+            `/payment?orderId=${orderData.id}&amount=${summary.total}&invoiceId=${newInvoice.id}&invoiceCode=${newInvoice.invoiceCode}`
+          );
         } else {
           navigate("/");
         }
@@ -299,6 +428,11 @@ const Checkout = () => {
   };
   const handleAddNewAddress = async () => {
     try {
+      if (!userId) {
+        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại.");
+        return;
+      }
+
       const token = localStorage.getItem("accessToken");
       const finalDeliveryAddress = selectedWard
         ? `${formAddress.delivery_address}, ${selectedWard}`
@@ -309,14 +443,14 @@ const Checkout = () => {
         delivery_address: finalDeliveryAddress,
         delivery_note: formAddress.delivery_note,
       };
-      const res = await fetch(`/api/addresses/add`, {
+      const res = await safeFetch(`/api/addresses/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
-      });
+      }, 'POST /api/addresses/add');
 
       if (res.ok) {
         setFormAddress({
@@ -328,14 +462,14 @@ const Checkout = () => {
         toast.success("Add address successfully!!");
         setIsAddAddress(false);
       }
-      const resAddress = await fetch(
+      const resAddress = await safeFetch(
         `/api/addresses/${userId}`,
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        }, 'GET /api/addresses/{userId}'
       );
       const data = await resAddress.json();
       setAddresses(data);

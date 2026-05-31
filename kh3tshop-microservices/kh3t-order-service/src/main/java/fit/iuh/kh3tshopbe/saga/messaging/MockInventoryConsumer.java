@@ -2,6 +2,7 @@ package fit.iuh.kh3tshopbe.saga.messaging;
 
 import fit.iuh.kh3tshopbe.saga.event.OrderEvent;
 import fit.iuh.kh3tshopbe.saga.service.SagaCoordinator;
+import fit.iuh.kh3tshopbe.inventory.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -15,18 +16,12 @@ import java.time.LocalDateTime;
 public class MockInventoryConsumer {
 
     private final SagaCoordinator coordinator;
+    private final InventoryService inventoryService;
 
     @KafkaListener(topics = SagaCoordinator.ORDER_CREATED_TOPIC, groupId = "order-service")
     public void onOrderCreated(OrderEvent event) throws InterruptedException {
-        Thread.sleep(500);
-        coordinator.publish(SagaCoordinator.INVENTORY_RESERVED_TOPIC, OrderEvent.builder()
-                .eventType("INVENTORY_RESERVED")
-                .orderId(event.getOrderId())
-                .userId(event.getUserId())
-                .totalAmount(event.getTotalAmount())
-                .items(event.getItems())
-                .timestamp(LocalDateTime.now())
-                .build());
+        Thread.sleep(200);
+        inventoryService.reserve(event.getOrderId(), event.getUserId(), event.getItems());
     }
 
     @KafkaListener(topics = SagaCoordinator.ORDER_CANCELLED_TOPIC, groupId = "order-service")

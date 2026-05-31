@@ -49,7 +49,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                     // 3. CÁC API LẤY DỮ LIỆU (Đã sửa thêm dấu / vào trước cart-details để hết cảnh báo log)
                     .requestMatchers(HttpMethod.GET, "/accounts/username/*", "/products", "/products/**", "/categories", "/categories/**", 
                                     "/cart-details/**", "/cart-details/cart/**", "/carts/", "/carts/**", "/addresses/", "/addresses/**", 
-                                    "/sizes", "/orders", "/orders/**", "/invoices", "/invoices/**", "/customers", "/customers/**").permitAll()
+                                    "/sizes", "/orders", "/orders/**", "/api/orders/**", "/invoices", "/invoices/**", "/customers", "/customers/**").permitAll()
                     
                     .requestMatchers(HttpMethod.POST, "/chat/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/chat/**").permitAll()

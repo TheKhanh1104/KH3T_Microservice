@@ -10,5 +10,7 @@ import java.util.UUID;
 public interface SagaOrderRepository extends JpaRepository<SagaOrder, UUID> {
     List<SagaOrder> findAllByOrderByCreatedAtDesc();
 
+    List<SagaOrder> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
+
     List<SagaOrder> findByStatus(OrderStatus status);
 }

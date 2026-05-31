@@ -27,7 +27,8 @@ public enum ErrorCode {
     SIZE_DETAIL_NOT_FOUND(3002, "Size detail not found", HttpStatus.NOT_FOUND),
     INVOICE_NOT_FOUND(3003, "Invoice not found", HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_FOUND(3004, "Account not found", HttpStatus.NOT_FOUND),
-    ORDER_NOT_FOUND(3005, "Order not found", HttpStatus.NOT_FOUND);
+    CUSTOMER_TRADING_NOT_FOUND(3005, "Customer trading not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_FOUND(3006, "Order not found", HttpStatus.NOT_FOUND);
 
     private int code;
     private String message;

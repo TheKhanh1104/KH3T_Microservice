@@ -24,16 +24,66 @@ export default function Orders() {
     loadOrders();
   }, []);
 
+  const normalizeSagaOrder = (order) => ({
+    id: order.id,
+    orderCode: order.id,
+    orderDate: order.createdAt,
+    statusOrder: order.status,
+    paymentMethod: order.paymentMethod || "N/A",
+    customerTrading: {
+      receiverName: String(order.userId || "N/A"),
+      receiverPhone: "N/A",
+      receiverAddress: "N/A",
+      totalAmount: order.totalAmount || 0,
+    },
+    account: null,
+    note: order.note || "",
+    orderDetails: (order.items || []).map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.unitPrice * item.quantity,
+      size: item.size,
+    })),
+  });
+
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/orders");
-      if (!res.ok) {
+      const token = localStorage.getItem("accessToken");
+
+      const [legacyRes, sagaRes] = await Promise.all([
+        fetch("/api/orders", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch("/api/orders/saga", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
+
+      if (!legacyRes.ok && !sagaRes.ok) {
         alert("Cannot load orders");
         return;
       }
-      const data = await res.json();
-      setOrders(Array.isArray(data) ? data : data?.result || []);
+
+      const legacyData = legacyRes.ok ? await legacyRes.json() : [];
+      const sagaData = sagaRes.ok ? await sagaRes.json() : [];
+
+      const legacyOrders = Array.isArray(legacyData) ? legacyData : legacyData?.result || [];
+      const sagaOrders = Array.isArray(sagaData) ? sagaData : sagaData?.result || [];
+
+      setOrders([
+        ...legacyOrders,
+        ...sagaOrders.map(normalizeSagaOrder),
+      ]);
     } catch (error) {
       console.error("Error loading orders:", error);
       alert("Error loading orders");
@@ -108,6 +158,9 @@ export default function Orders() {
     setShowDetailModal(true);
   };
 
+  const isLegacyOrderId = (orderId) =>
+    typeof orderId === "number" || /^\d+$/.test(String(orderId));
+
   const handleCreateInvoice = async (orderId) => {
     const token = localStorage.getItem("accessToken");
 
@@ -132,86 +185,65 @@ export default function Orders() {
     return await res.json();
   };
 
- const handleConfirmOrder = async (orderId) => {
-  const order = orders.find((o) => o.id === orderId);
-  if (!order) {
-    alert("Order not found!");
-    return;
-  }
+  const handleConfirmOrder = async (orderId) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) {
+      alert("Order not found!");
+      return;
+    }
 
-  const isCashPayment = order.paymentMethod === "CASH";
+    const isCashPayment = order.paymentMethod === "CASH";
 
-  const confirmMessage = isCashPayment
-    ? "Confirm this order?"
-    : "Confirm this order?";
+    if (!window.confirm("Confirm this order?")) {
+      return;
+    }
 
-  if (!window.confirm(confirmMessage)) {
-    return;
-  }
+    try {
+      const token = localStorage.getItem("accessToken");
+      const confirmUrl = isLegacyOrderId(orderId)
+        ? `/api/orders/status/${orderId}`
+        : `/api/orders/saga/${orderId}/confirm`;
 
-  try {
-    const token = localStorage.getItem("accessToken");
-
-    // 1) Cập nhật trạng thái đơn hàng
-    const statusRes = await fetch(
-      `/api/orders/status/${orderId}`,
-      {
+      const statusRes = await fetch(confirmUrl, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ statusOrder: "CONFIRMED" }),
+        body: isLegacyOrderId(orderId)
+          ? JSON.stringify({ statusOrder: "CONFIRMED" })
+          : undefined,
+      });
+
+      if (!statusRes.ok) {
+        const error = await statusRes.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to confirm order");
       }
-    );
 
-    if (!statusRes.ok) {
-      const error = await statusRes.json().catch(() => ({}));
-      throw new Error(error.message || "Failed to confirm order");
-    }
-
-    // 2) 👉 Gửi email thông báo cho khách hàng
-    try {
-      await fetch(
-        `/api/customers/email/notification/${order.account.id}/${orderId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      if (isLegacyOrderId(orderId) && isCashPayment) {
+        try {
+          await handleCreateInvoice(orderId);
+          toast.success(
+            "Order confirmed successfully! Invoice has been created."
+          );
+        } catch (invoiceError) {
+          console.error("Invoice creation failed:", invoiceError);
+          toast.warning(
+            "Order confirmed successfully!\nInvoice could not be created. Please create it manually."
+          );
         }
-      );
-      // toast.info("Notification email sent to the customer.");
-    } catch (emailErr) {
-      console.error("Email failed:", emailErr);
-      // toast.warning("Order confirmed, but failed to send email.");
-    }
-
-    // 3) Nếu thanh toán tiền mặt thì tạo hóa đơn
-    if (isCashPayment) {
-      try {
-        await handleCreateInvoice(orderId);
-        toast.success(
-          "Order confirmed successfully! Invoice has been created."
-        );
-      } catch (invoiceError) {
-        console.error("Invoice creation failed:", invoiceError);
-        toast.warning(
-          "Order confirmed successfully!\nInvoice could not be created. Please create it manually."
-        );
+      } else {
+        toast.success("Order confirmed successfully!");
       }
-    } else {
-      toast.success("Order confirmed successfully!");
-    }
 
-    loadOrders();
-    setShowDetailModal(false);
-  } catch (error) {
-    console.error("Error confirming order:", error);
-    alert("Error: " + (error.message || "Something went wrong"));
-  }
-};
+      loadOrders();
+      setShowDetailModal(false);
+    } catch (error) {
+      console.error("Error confirming order:", error);
+      alert("Error: " + (error.message || "Something went wrong"));
+    }
+  };
 
 
   const getStatusColor = (status) => {

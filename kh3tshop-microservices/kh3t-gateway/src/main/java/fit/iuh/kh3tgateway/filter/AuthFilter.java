@@ -60,7 +60,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
                path.contains("/categories") ||
                path.contains("/sizes") ||
                path.contains("/size-details") ||
-               path.contains("/v1/payment");
+               path.contains("/v1/payment") ||
+               path.contains("/chat");
     }
 
     private Mono<Void> unauthorized(ServerHttpResponse response, int code, String message) {

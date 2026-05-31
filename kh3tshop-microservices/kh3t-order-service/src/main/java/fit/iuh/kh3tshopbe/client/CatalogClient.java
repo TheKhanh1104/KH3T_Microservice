@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "catalog-service", url = "http://localhost:8082")
+@FeignClient(name = "catalog-service")
 public interface CatalogClient {
 
     @GetMapping("/products/{id}")

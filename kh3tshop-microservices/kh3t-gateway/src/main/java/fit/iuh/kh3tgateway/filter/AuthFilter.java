@@ -59,6 +59,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
                path.contains("/products") ||
                path.contains("/categories") ||
                path.contains("/sizes") ||
+               path.contains("/size-details") ||
                path.contains("/v1/payment");
     }
 

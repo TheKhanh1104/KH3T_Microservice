@@ -41,11 +41,7 @@ public class GeminiService {
         System.out.println("=== AI Service BASE URL: " + baseUrl + " ===");
     }
 
-    public String generateText(String prompt) {
-        if (prompt == null || prompt.isBlank()) {
-            return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
-        }
-
+    public String generateRawText(String prompt) {
         if (apiKey == null || apiKey.isBlank()) {
             apiKey = System.getenv("GEMINI_API_KEY");
         }
@@ -65,14 +61,23 @@ public class GeminiService {
                 int status = e.getStatusCode().value();
                 System.out.println("=== Model " + model + " failed with " + status + ", trying next... ===");
                 if (status != 429 && status != 503 && status != 404) {
-                    return "Gemini API error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString();
+                    throw e;
                 }
             } catch (Exception e) {
                 System.out.println("=== Model " + model + " error: " + e.getMessage() + ", trying next... ===");
             }
         }
+        return null;
+    }
 
-        return "Dạ hệ thống đang bận, anh/chị vui lòng nhắn lại sau ít phút nhé! 🙏";
+    public String generateText(String prompt) {
+        // Giữ lại phương thức này để không làm hỏng các code cũ nếu có, 
+        // nhưng bên trong sẽ gọi generateRawText
+        if (prompt == null || prompt.isBlank()) {
+            return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
+        }
+        String res = generateRawText(prompt);
+        return res != null ? res : "Dạ hệ thống đang bận, anh/chị vui lòng nhắn lại sau ít phút nhé! 🙏";
     }
 
     private String callModel(String model, String prompt) {

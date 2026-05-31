@@ -77,9 +77,10 @@ export default function Header() {
   const [cart, setCart] = useState(null);
 
   const fetchUser = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
 
+    try {
       const res = await fetch(`/api/accounts/myinfor`, {
         headers: {
           "Content-Type": "application/json",

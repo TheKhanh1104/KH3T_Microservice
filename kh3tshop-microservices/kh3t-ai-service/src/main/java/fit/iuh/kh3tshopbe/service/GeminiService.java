@@ -1,5 +1,6 @@
 package fit.iuh.kh3tshopbe.service;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -12,64 +13,99 @@ import java.util.Map;
 @Service
 public class GeminiService {
 
-    private final WebClient webClient;
+    private static final List<String> FALLBACK_MODELS = List.of(
+            "google/gemma-4-31b-it:free",
+            "google/gemma-4-26b-a4b-it:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "deepseek/deepseek-v4-flash:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "openai/gpt-oss-20b:free"
+    );
 
-    @Value("${gemini.api.key}")
+    private final WebClient.Builder webClientBuilder;
+    private WebClient webClient;
+
+    @Value("${gemini.api.key:}")
     private String apiKey;
 
-    @Value("${gemini.base-url}")
+    @Value("${gemini.base-url:https://openrouter.ai/api/v1}")
     private String baseUrl;
 
-    public GeminiService() {
-        this.webClient = WebClient.builder().build();
+    public GeminiService(WebClient.Builder webClientBuilder) {
+        this.webClientBuilder = webClientBuilder;
+    }
+
+    @PostConstruct
+    public void init() {
+        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
+        System.out.println("=== AI Service BASE URL: " + baseUrl + " ===");
     }
 
     public String generateText(String prompt) {
-        if (apiKey == null || apiKey.isBlank()) {
-            return "Gemini API key chưa được cấu hình.";
+        if (prompt == null || prompt.isBlank()) {
+            return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
         }
 
-        String url = baseUrl + "/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getenv("GEMINI_API_KEY");
+        }
+
+        if (apiKey == null || apiKey.isBlank()) {
+            return "HỆ THỐNG: API Key chưa được nạp. Vui lòng kiểm tra môi trường hoặc file .env.";
+        }
+
+        for (String model : FALLBACK_MODELS) {
+            try {
+                String result = callModel(model, prompt);
+                if (result != null && !result.isBlank()) {
+                    System.out.println("=== Used model: " + model + " ===");
+                    return result;
+                }
+            } catch (WebClientResponseException e) {
+                int status = e.getStatusCode().value();
+                System.out.println("=== Model " + model + " failed with " + status + ", trying next... ===");
+                if (status != 429 && status != 503 && status != 404) {
+                    return "Gemini API error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString();
+                }
+            } catch (Exception e) {
+                System.out.println("=== Model " + model + " error: " + e.getMessage() + ", trying next... ===");
+            }
+        }
+
+        return "Dạ hệ thống đang bận, anh/chị vui lòng nhắn lại sau ít phút nhé! 🙏";
+    }
+
+    private String callModel(String model, String prompt) {
         Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(Map.of("text", prompt)))
+                "model", model,
+                "messages", List.of(
+                        Map.of("role", "user", "content", prompt)
                 )
         );
 
-        try {
-            Map<String, Object> response = webClient.post()
-                    .uri(url)
-                    .header("Content-Type", "application/json")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
+        Map<String, Object> response = webClient.post()
+                .uri("/chat/completions")
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .header("HTTP-Referer", "http://localhost:8080")
+                .header("X-Title", "KH3T Shop")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .block();
 
-            if (response == null || !response.containsKey("candidates")) {
-                return "Gemini API response is empty or invalid.";
-            }
+        if (response == null || !response.containsKey("choices")) return null;
 
-            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-            if (candidates == null || candidates.isEmpty()) {
-                return "No candidates returned from Gemini API.";
-            }
+        List<?> choices = (List<?>) response.get("choices");
+        if (choices == null || choices.isEmpty()) return null;
 
-            Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-            if (content == null) {
-                return "Gemini API response is missing content.";
-            }
+        Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
+        if (firstChoice == null) return null;
 
-            List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-            if (parts == null || parts.isEmpty()) {
-                return "Gemini API response is missing parts.";
-            }
+        Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
+        if (message == null) return null;
 
-            Object text = parts.get(0).get("text");
-            return text == null ? "" : text.toString();
-        } catch (WebClientResponseException e) {
-            return "Gemini API error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString();
-        } catch (Exception e) {
-            return "Error calling Gemini API: " + e.getMessage();
-        }
+        Object content = message.get("content");
+        return content == null ? null : content.toString().trim();
     }
 }

@@ -1,5 +1,3 @@
-kh3tshop-be/src/main/resources/credentials.json
-
 # Terraform files
 **/.terraform/
 **/local_mirror/
@@ -7,7 +5,6 @@ kh3tshop-be/src/main/resources/credentials.json
 *.tfstate.*
 *.exe
 
-<<<<<<< HEAD
 # Build and IDE artifacts
 **/target/
 *.class
@@ -18,7 +15,7 @@ kh3tshop-be/src/main/resources/credentials.json
 .vscode/
 *.iml
 *.log
-=======
+
 # Java build artifacts
 **/target/
 **/*.class
@@ -28,4 +25,11 @@ kh3tshop-be/src/main/resources/credentials.json
 *.iml
 .vscode/
 *.DS_Store
->>>>>>> 5dafad02e68f5c55b0631c9be33ac2639d4c09a8
+
+# Environment files (QUAN TRỌNG)
+.env
+*.env
+!.env.example
+
+# Credentials
+**/credentials.json

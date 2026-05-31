@@ -14,11 +14,11 @@ import java.util.Map;
 public class GeminiService {
 
     private static final List<String> FALLBACK_MODELS = List.of(
-            "google/gemma-2-9b-it:free",
-            "meta-llama/llama-3-8b-instruct:free",
-            "deepseek/deepseek-r1:free",
-            "qwen/qwen-2-7b-instruct:free",
-            "microsoft/phi-3-medium-128k-instruct:free"
+            "openrouter/free",
+            "meta-llama/llama-3.2-3b-instruct:free",
+            "meta-llama/llama-3.1-8b-instruct:free",
+            "qwen/qwen-2.5-7b-instruct:free",
+            "google/gemma-2-9b-it:free"
     );
 
     private final WebClient.Builder webClientBuilder;

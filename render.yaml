@@ -1,0 +1,99 @@
+services:
+  - type: web
+    name: kh3t-identity-service
+    env: docker
+    plan: free
+    rootDir: kh3tshop-microservices
+    dockerfilePath: ./kh3t-identity-service/Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: https://kh3t-discovery.onrender.com/eureka/
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+      - key: SPRING_DATASOURCE_USERNAME
+        value: u0gfjpm1l8qfzgvi
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATA_REDIS_HOST
+        value: known-manatee-140197.upstash.io
+      - key: SPRING_DATA_REDIS_PORT
+        value: 6379
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: gQAAAAAAAiOlAAIgcDE1NGI1OGU1OTMxNjI0NjA5OTY3ZmVkODYzN2ZjYzdlMA
+
+  - type: web
+    name: kh3t-catalog-service
+    env: docker
+    plan: free
+    rootDir: kh3tshop-microservices
+    dockerfilePath: ./kh3t-catalog-service/Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: https://kh3t-discovery.onrender.com/eureka/
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+      - key: SPRING_DATASOURCE_USERNAME
+        value: u0gfjpm1l8qfzgvi
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATA_REDIS_HOST
+        value: known-manatee-140197.upstash.io
+      - key: SPRING_DATA_REDIS_PORT
+        value: 6379
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: gQAAAAAAAiOlAAIgcDE1NGI1OGU1OTMxNjI0NjA5OTY3ZmVkODYzN2ZjYzdlMA
+
+  - type: web
+    name: kh3t-order-service
+    env: docker
+    plan: free
+    rootDir: kh3tshop-microservices
+    dockerfilePath: ./kh3t-order-service/Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: https://kh3t-discovery.onrender.com/eureka/
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+      - key: SPRING_DATASOURCE_USERNAME
+        value: u0gfjpm1l8qfzgvi
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATA_REDIS_HOST
+        value: known-manatee-140197.upstash.io
+      - key: SPRING_DATA_REDIS_PORT
+        value: 6379
+      - key: SPRING_DATA_REDIS_PASSWORD
+        value: gQAAAAAAAiOlAAIgcDE1NGI1OGU1OTMxNjI0NjA5OTY3ZmVkODYzN2ZjYzdlMA
+
+  - type: web
+    name: kh3t-ai-service
+    env: docker
+    plan: free
+    rootDir: kh3tshop-microservices
+    dockerfilePath: ./kh3t-ai-service/Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: https://kh3t-discovery.onrender.com/eureka/
+      # Add GEMINI_API_KEY if needed here, otherwise it will be blank
+      - key: GEMINI_API_KEY
+        value: ""
+
+  - type: web
+    name: kh3t-gateway
+    env: docker
+    plan: free
+    rootDir: kh3tshop-microservices
+    dockerfilePath: ./kh3t-gateway/Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: https://kh3t-discovery.onrender.com/eureka/

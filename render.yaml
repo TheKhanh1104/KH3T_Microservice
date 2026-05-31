@@ -94,9 +94,8 @@ services:
         value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
-      # Add GEMINI_API_KEY if needed here, otherwise it will be blank
       - key: GEMINI_API_KEY
-        value: ""
+        sync: false
 
   - type: web
     name: kh3t-gateway

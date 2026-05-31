@@ -391,10 +391,49 @@ const Checkout = () => {
             // still remove cart because saga flow will handle items server-side
             localStorage.removeItem("cartItems");
           }
+
+          // ĐỒNG BỘ: Xóa toàn bộ các sản phẩm đã thanh toán thành công khỏi Database Cart
+          if (selectedCartItems.length > 0) {
+            try {
+              const cartRes = await fetch(`/api/carts/account/${resolvedUserId}`, {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              if (cartRes.ok) {
+                const cartData = await cartRes.json();
+                const cartId = cartData.result?.id;
+                if (cartId) {
+                  for (const item of selectedCartItems) {
+                    // Xóa chi tiết sản phẩm trong giỏ hàng ở Database
+                    await fetch(`/api/cart-details/delete/${item.id}`, {
+                      method: "DELETE",
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                    // Cập nhật lại tổng số lượng và tiền trong Database Cart
+                    await fetch(`/api/carts/update/${cartId}/delete`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ price: item.subtotal, quantity: item.quantity }),
+                    });
+                  }
+                }
+              }
+            } catch (dbCartErr) {
+              console.error("Lỗi đồng bộ xóa giỏ hàng Database khi checkout:", dbCartErr);
+            }
+          }
         }
         // If we reach here and detailsOk is true, consider order successful
         if (detailsOk) {
           toast.success("Order successful!!");
+          window.dispatchEvent(new Event("cartUpdated"));
         }
 
         if (payment === "bank") {

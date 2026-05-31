@@ -305,12 +305,32 @@ const ProductDetail = () => {
     }
     if (quantity < 1) return toast.warning("Quantity must be at least 1");
 
-    setIsAddedToCart(true);
-    toast.success("Added items, check your Cart!");
-    setTimeout(() => setIsAddedToCart(false), 2000);
-
     try {
       const token = localStorage.getItem("accessToken");
+
+      // BẢO VỆ AN TOÀN: Nếu chưa kịp load cart hoặc cart bị null, tự động fetch tại chỗ cực kỳ robust
+      let currentCart = cart;
+      if (!currentCart || !currentCart.id) {
+        const fetchRes = await fetch(`/api/carts/account/${user.id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (fetchRes.ok) {
+          const data = await fetchRes.json();
+          currentCart = data.result;
+          setCart(currentCart);
+        }
+      }
+
+      if (!currentCart || !currentCart.id) {
+        return toast.error("Giỏ hàng chưa khởi tạo xong, vui lòng thử lại sau giây lát!");
+      }
+
+      setIsAddedToCart(true);
+      toast.success("Added items, check your Cart!");
+      setTimeout(() => setIsAddedToCart(false), 2000);
 
       // Lấy sizeDetailId dựa trên selectedSize (sizeName)
       let sizeDetailId = null;
@@ -319,11 +339,7 @@ const ProductDetail = () => {
         const sizeDetail = uniqueSizes.find(
           (size) => size.sizeName === selectedSize
         );
-        // Lưu ý: uniqueSizes đã được gộp quantity, sizeDetailId là id của 1 trong các sizeDetails
-        // Giả định backend có thể xử lý việc này nếu chỉ gửi sizeName hoặc productId + sizeName
-        // Nếu backend yêu cầu sizeDetailId cụ thể, cần fetch size detail dựa trên productId và sizeName
-
-        // **GIẢI QUYẾT CONFLICT:** Giữ lại logic tìm sizeDetailId chi tiết từ nhánh khác
+        // ...
         const resSize = await fetch(
           `/api/sizes/${selectedSize}`, // Giả định selectedSize là tên (S, M, L, XL)
           {
@@ -352,7 +368,7 @@ const ProductDetail = () => {
 
       const dataSend = {
         productId: parseInt(id),
-        cartId: cart.id,
+        cartId: currentCart.id,
         quantity: quantity,
         // Chỉ thêm sizeDetailId nếu có size được chọn. Nếu không cần, backend sẽ tự xác định.
         // Cần đảm bảo backend xử lý được cả 2 trường hợp (có sizeDetailId hoặc không)
@@ -378,7 +394,7 @@ const ProductDetail = () => {
       };
 
       const resCart = await fetch(
-        `/api/carts/update/${cart.id}`,
+        `/api/carts/update/${currentCart.id}`,
         {
           method: "PUT",
           headers: {

@@ -151,9 +151,12 @@ const Cart = () => {
                 console.log(cd);
             }
             console.log("Cart API: ", data);
-            const items = Array.isArray(data)
+            const items = (Array.isArray(data)
                 ? data
-                : data.result || data.cartDetails || [];
+                : data.result || data.cartDetails || []).map((item) => ({
+                    ...item,
+                    selected: item.selected !== undefined ? item.selected : item.isSelected,
+                }));
             setCartItems(items);
         } catch (err) {
             console.error("Lỗi: ", err);
@@ -220,7 +223,13 @@ const Cart = () => {
 
             setCartItems((prev) =>
                 prev.map((item) =>
-                    item.id === cartDetailId ? { ...item, ...data } : item
+                    item.id === cartDetailId
+                        ? {
+                              ...item,
+                              ...data,
+                              selected: data.selected !== undefined ? data.selected : data.isSelected,
+                          }
+                        : item
                 )
             );
             const resCart = await fetch(
@@ -287,7 +296,13 @@ const Cart = () => {
             }
             setCartItems((prev) =>
                 prev.map((item) =>
-                    item.id === cartDetailId ? { ...item, ...data } : item
+                    item.id === cartDetailId
+                        ? {
+                              ...item,
+                              ...data,
+                              selected: data.selected !== undefined ? data.selected : data.isSelected,
+                          }
+                        : item
                 )
             );
             const resCart = await fetch(

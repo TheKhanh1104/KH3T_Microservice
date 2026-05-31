@@ -111,12 +111,36 @@ public class SagaOrderService {
     @Transactional
     public void onPaymentCharged(UUID orderId) {
         SagaOrder order = getRequiredOrder(orderId);
+        if (order.getStatus() == OrderStatus.PAID) {
+            return;
+        }
+        if (order.getStatus() == OrderStatus.PENDING) {
+            order.setStatus(OrderStatus.PAID);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+            notificationService.sendUpdate(order.getUserId(), toResponse(order));
+            return;
+        }
         if (order.getStatus() != OrderStatus.CONFIRMED) {
             return;
         }
         stateMachine.transition(order, OrderStatus.PAID);
         orderRepository.save(order);
         notificationService.sendUpdate(order.getUserId(), toResponse(order));
+    }
+
+    @Transactional
+    public void onPaymentConfirmed(UUID orderId) {
+        SagaOrder order = getRequiredOrder(orderId);
+        if (order.getStatus() == OrderStatus.CONFIRMED) {
+            return;
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            return;
+        }
+        stateMachine.transition(order, OrderStatus.CONFIRMED);
+        SagaOrder saved = orderRepository.save(order);
+        notificationService.sendUpdate(saved.getUserId(), toResponse(saved));
     }
 
     @Transactional
@@ -206,6 +230,11 @@ public class SagaOrderService {
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .items(order.getItems().stream().map(this::toDto).toList())
+                .paymentToken(null)
                 .build();
+    }
+
+    public java.util.UUID findOrderIdByPaymentToken(String token) {
+        return null;
     }
 }

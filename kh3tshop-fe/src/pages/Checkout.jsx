@@ -398,25 +398,46 @@ const Checkout = () => {
         }
 
         if (payment === "bank") {
-          const invoiceRequest = {
-            orderId: orderData.id,
-            paymentMethod: "BANK_TRANSFER",
-            paymentStatus: "UNPAID",
-          };
+          if (isNumericId) {
+            const invoiceRequest = {
+              orderId: orderData.id,
+              paymentMethod: "BANK_TRANSFER",
+              paymentStatus: "UNPAID",
+            };
 
-          const invRes = await safeFetch("/api/invoices", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(invoiceRequest),
-          }, 'POST /api/invoices');
+            const invRes = await safeFetch("/api/invoices", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(invoiceRequest),
+            }, 'POST /api/invoices');
 
-          const newInvoice = await invRes.json();
-          navigate(
-            `/payment?orderId=${orderData.id}&amount=${summary.total}&invoiceId=${newInvoice.id}&invoiceCode=${newInvoice.invoiceCode}`
-          );
+            const newInvoice = await invRes.json();
+            sessionStorage.setItem(
+              "paymentInfo",
+              JSON.stringify({
+                orderId: orderData.id,
+                amount: summary.total,
+                invoiceId: newInvoice.id,
+                invoiceCode: newInvoice.invoiceCode,
+              })
+            );
+            navigate(
+              `/payment?orderId=${orderData.id}&amount=${summary.total}&invoiceId=${newInvoice.id}&invoiceCode=${newInvoice.invoiceCode}`
+            );
+          } else {
+            sessionStorage.setItem(
+              "paymentInfo",
+              JSON.stringify({
+                orderId: orderData.id,
+                amount: summary.total,
+                invoiceCode: orderData.id,
+              })
+            );
+            navigate(`/payment?orderId=${orderData.id}&amount=${summary.total}`);
+          }
         } else {
           navigate("/");
         }

@@ -145,11 +145,11 @@ const Cart = () => {
                     },
                 }
             );
-            const data = await res.json();
-            const newCartItems = [];
-            for (const cd of data) {
-                console.log(cd);
+            if (!res.ok) {
+                console.error("Lỗi fetch cart details:", res.status, res.statusText);
+                return;
             }
+            const data = await res.json();
             console.log("Cart API: ", data);
             const items = (Array.isArray(data)
                 ? data
@@ -159,9 +159,10 @@ const Cart = () => {
                 }));
             setCartItems(items);
         } catch (err) {
-            console.error("Lỗi: ", err);
+            console.error("Lỗi hanldeFetchCart: ", err);
         }
     };
+
 
     const handleToggleSelect = async (cartDetailId) => {
         const updatedItems = cartItems.map((item) =>

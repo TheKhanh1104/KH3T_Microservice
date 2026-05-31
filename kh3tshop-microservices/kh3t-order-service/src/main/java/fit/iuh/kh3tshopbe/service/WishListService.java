@@ -77,9 +77,15 @@ public class WishListService {
     }
 
     public boolean isProductInWishlist(String username, Integer productId) {
-        int accountId = getAccountIdFromUsername(username);
-        return wishlistRepository.existsByAccountIdAndDetails_ProductId(accountId, productId);
+        try {
+            int accountId = getAccountIdFromUsername(username);
+            return wishlistRepository.existsByAccountIdAndDetails_ProductId(accountId, productId);
+        } catch (Exception e) {
+            System.err.println("Lỗi isProductInWishlist cho " + username + ": " + e.getMessage());
+            return false;
+        }
     }
+
 
     private WishListResponse toResponse(WishList w, String username) {
         return WishListResponse.builder()

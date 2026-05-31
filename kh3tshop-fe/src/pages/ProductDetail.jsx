@@ -339,31 +339,9 @@ const ProductDetail = () => {
         const sizeDetail = uniqueSizes.find(
           (size) => size.sizeName === selectedSize
         );
-        // ...
-        const resSize = await fetch(
-          `/api/sizes/${selectedSize}`, // Giả định selectedSize là tên (S, M, L, XL)
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const size = await resSize.json();
-        const sizeIdToFind = size.id;
-        const productIdToFind = parseInt(id);
-        const resSizeDatail = await fetch(
-          `/api/size-details/find?productId=${productIdToFind}&sizeId=${sizeIdToFind}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const sizeDetailResponse = await resSizeDatail.json();
-        sizeDetailId = sizeDetailResponse.id; // Lấy sizeDetailId
+        if (sizeDetail) {
+          sizeDetailId = sizeDetail.id;
+        }
       }
 
       const dataSend = {

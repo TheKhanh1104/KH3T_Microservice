@@ -16,6 +16,8 @@ services:
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
         value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: 1
       - key: SPRING_DATA_REDIS_HOST
         value: known-manatee-140197.upstash.io
       - key: SPRING_DATA_REDIS_PORT
@@ -40,6 +42,8 @@ services:
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
         value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: 1
       - key: SPRING_DATA_REDIS_HOST
         value: known-manatee-140197.upstash.io
       - key: SPRING_DATA_REDIS_PORT

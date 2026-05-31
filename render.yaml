@@ -67,11 +67,15 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mariadb://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+        value: jdbc:mariadb://bdn7ruaxqdmz1bhougtm-mysql.services.clever-cloud.com:20229/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
         value: Hy43lVMta7O1auqFzNJS
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: 1
+      - key: SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE
+        value: 0
       - key: SPRING_DATA_REDIS_HOST
         value: known-manatee-140197.upstash.io
       - key: SPRING_DATA_REDIS_PORT

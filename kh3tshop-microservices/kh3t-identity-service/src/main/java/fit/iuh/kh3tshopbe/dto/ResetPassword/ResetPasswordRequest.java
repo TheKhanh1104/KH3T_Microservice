@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ResetPasswordRequest {
+    String email;
     String token;
     String newPassword;
     String otp;

@@ -40,13 +40,19 @@ public class Account {
     @Column(name = "status_login")
     private StatusLogin statusLogin;
 
+    @Column(name = "otp_code")
+    private String otpCode;
+
+    @Column(name = "otp_expiry")
+    private Date otpExpiry;
+
     @JsonIgnore
     @OneToMany(mappedBy = "account")
     private List<Address> addresses;
 
     public Account() {}
 
-    public Account(int id, Customer customer, String username, String password, Role role, Date createAt, Date updateAt, StatusLogin statusLogin, List<Address> addresses) {
+    public Account(int id, Customer customer, String username, String password, Role role, Date createAt, Date updateAt, StatusLogin statusLogin, List<Address> addresses, String otpCode, Date otpExpiry) {
         this.id = id;
         this.customer = customer;
         this.username = username;
@@ -56,6 +62,8 @@ public class Account {
         this.updateAt = updateAt;
         this.statusLogin = statusLogin;
         this.addresses = addresses;
+        this.otpCode = otpCode;
+        this.otpExpiry = otpExpiry;
     }
 
     // Manual Getters & Setters
@@ -78,6 +86,12 @@ public class Account {
     public List<Address> getAddresses() { return addresses; }
     public void setAddresses(List<Address> addresses) { this.addresses = addresses; }
 
+    public String getOtpCode() { return otpCode; }
+    public void setOtpCode(String otpCode) { this.otpCode = otpCode; }
+
+    public Date getOtpExpiry() { return otpExpiry; }
+    public void setOtpExpiry(Date otpExpiry) { this.otpExpiry = otpExpiry; }
+
     // Manual Builder
     public static AccountBuilder builder() {
         return new AccountBuilder();
@@ -93,6 +107,8 @@ public class Account {
         private Date updateAt;
         private StatusLogin statusLogin;
         private List<Address> addresses;
+        private String otpCode;
+        private Date otpExpiry;
 
         public AccountBuilder id(int id) {
             this.id = id;
@@ -139,8 +155,18 @@ public class Account {
             return this;
         }
 
+        public AccountBuilder otpCode(String otpCode) {
+            this.otpCode = otpCode;
+            return this;
+        }
+
+        public AccountBuilder otpExpiry(Date otpExpiry) {
+            this.otpExpiry = otpExpiry;
+            return this;
+        }
+
         public Account build() {
-            return new Account(id, customer, username, password, role, createAt, updateAt, statusLogin, addresses);
+            return new Account(id, customer, username, password, role, createAt, updateAt, statusLogin, addresses, otpCode, otpExpiry);
         }
     }
 }

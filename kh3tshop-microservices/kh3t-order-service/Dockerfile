@@ -8,7 +8,8 @@ COPY kh3t-common/src ./kh3t-common/src
 COPY kh3t-order-service/pom.xml ./kh3t-order-service/pom.xml
 COPY kh3t-order-service/src ./kh3t-order-service/src
 
-RUN mvn -f kh3t-common/pom.xml -DskipTests install && \
+RUN mvn -N -f pom.xml install && \
+	mvn -f kh3t-common/pom.xml -DskipTests install && \
 	mvn -f kh3t-order-service/pom.xml -DskipTests clean package
 
 FROM eclipse-temurin:21-jre

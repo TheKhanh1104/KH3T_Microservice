@@ -23,34 +23,50 @@ public class AuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-        // Exclude actuator and public endpoints
-        if (path.startsWith("/actuator") || path.startsWith("/eureka") || path.startsWith("/public") || path.equals("/") ||
-            path.startsWith("/api/auth/login") || path.startsWith("/api/auth/introspect") || path.startsWith("/api/auth/refresh") ||
-            path.startsWith("/api/auth/forgot-password") || path.startsWith("/api/auth/reset-password") ||
-            path.startsWith("/api/accounts") || path.equals("/api/accounts")) {
+        // Exclude public endpoints
+        if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return unauthorized(exchange.getResponse(), "Missing or invalid Authorization header");
+            return unauthorized(exchange.getResponse(), 1005, "Missing or invalid Authorization header");
         }
 
         String token = authHeader.substring(7);
         try {
             if (!JwtUtil.validateToken(token, jwtSecret)) {
-                return unauthorized(exchange.getResponse(), "Invalid or expired token");
+                return unauthorized(exchange.getResponse(), 1008, "Invalid or expired token");
             }
         } catch (JOSEException e) {
-            return unauthorized(exchange.getResponse(), "Token validation error");
+            return unauthorized(exchange.getResponse(), 1006, "Token validation error");
         }
 
         return chain.filter(exchange);
     }
 
-    private Mono<Void> unauthorized(ServerHttpResponse response, String message) {
+    private boolean isPublicPath(String path) {
+        return path.startsWith("/actuator") || 
+               path.startsWith("/eureka") || 
+               path.startsWith("/public") || 
+               path.equals("/") ||
+               path.contains("/auth/login") || 
+               path.contains("/auth/introspect") || 
+               path.contains("/auth/refresh") ||
+               path.contains("/auth/forgot-password") || 
+               path.contains("/auth/reset-password") ||
+               path.contains("/accounts") ||
+               path.contains("/products") ||
+               path.contains("/categories") ||
+               path.contains("/sizes") ||
+               path.contains("/v1/payment");
+    }
+
+    private Mono<Void> unauthorized(ServerHttpResponse response, int code, String message) {
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, "application/json");
+        String jsonResponse = String.format("{\"code\":%d, \"message\":\"%s\"}", code, message);
+        byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
     }
 

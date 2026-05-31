@@ -1,44 +1,51 @@
 package fit.iuh.kh3tshopbe.service;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
+import fit.iuh.kh3tshopbe.entities.RefreshToken;
+import fit.iuh.kh3tshopbe.repository.RefreshTokenRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.Date;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
 
-    private final StringRedisTemplate redis;
-    private static final Duration TTL = Duration.ofDays(7);
+    private final RefreshTokenRepository refreshTokenRepository;
+    private static final long TTL_MILLIS = 7L * 24 * 60 * 60 * 1000; // 7 days
 
-    public RefreshTokenService(StringRedisTemplate redis) {
-        this.redis = redis;
-    }
-
-    private String keyFor(String username) {
-        return "refresh:" + username;
-    }
-
+    @Transactional
     public void storeRefreshToken(String username, String token) {
-        redis.opsForValue().set(keyFor(username), token, TTL.toMillis(), TimeUnit.MILLISECONDS);
+        RefreshToken refreshToken = refreshTokenRepository.findByUsername(username)
+                .orElse(new RefreshToken());
+        
+        refreshToken.setUsername(username);
+        refreshToken.setToken(token);
+        refreshToken.setExpiryDate(new Date(System.currentTimeMillis() + TTL_MILLIS));
+        
+        refreshTokenRepository.save(refreshToken);
     }
 
+    @Transactional
     public boolean validateAndRotate(String username, String token, String newToken) {
-        String key = keyFor(username);
-        String existing = redis.opsForValue().get(key);
-        if (Objects.equals(existing, token)) {
-            // rotate: overwrite with new token and TTL
-            redis.opsForValue().set(key, newToken, TTL.toMillis(), TimeUnit.MILLISECONDS);
-            return true;
+        Optional<RefreshToken> existingOpt = refreshTokenRepository.findByUsername(username);
+        if (existingOpt.isPresent()) {
+            RefreshToken existing = existingOpt.get();
+            if (existing.getToken().equals(token) && existing.getExpiryDate().after(new Date())) {
+                existing.setToken(newToken);
+                existing.setExpiryDate(new Date(System.currentTimeMillis() + TTL_MILLIS));
+                refreshTokenRepository.save(existing);
+                return true;
+            }
         }
         return false;
     }
 
     public boolean validate(String username, String token) {
-        String existing = redis.opsForValue().get(keyFor(username));
-        return Objects.equals(existing, token);
+        return refreshTokenRepository.findByUsername(username)
+                .map(t -> t.getToken().equals(token) && t.getExpiryDate().after(new Date()))
+                .orElse(false);
     }
-
 }

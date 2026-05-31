@@ -54,8 +54,21 @@ const Order = () => {
 
       if (sagaRes.ok) {
         const sagaData = await sagaRes.json();
+        // Đảm bảo sagaData là array trước khi gọi .map()
+        const sagaList = Array.isArray(sagaData)
+          ? sagaData
+          : Array.isArray(sagaData?.result)
+          ? sagaData.result
+          : [];
+
+        if (sagaList.length === 0) {
+          setOrders([]);
+          setLoading(false);
+          return;
+        }
+
         setOrders(
-          sagaData.map((order) => ({
+          sagaList.map((order) => ({
             id: order.id,
             orderCode: order.id,
             orderDate: order.createdAt,

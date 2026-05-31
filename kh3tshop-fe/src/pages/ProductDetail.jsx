@@ -353,39 +353,45 @@ const ProductDetail = () => {
         ...(sizeDetailId && { sizeDetailId: sizeDetailId }),
       };
 
-      const res = await fetch(
-        `/api/cart-details/add-to-cart`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(dataSend),
-        }
-      );
+        const res = await fetch(
+          `/api/cart-details/add-to-cart`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(dataSend),
+          }
+        );
 
-      // **GIẢI QUYẾT CONFLICT:** Giữ lại logic cập nhật cart totalAmount
-      const cartRequest = {
-        quantity: parseInt(quantity),
-        totalAmount: product.costPrice, // Dùng costPrice (giá sale)
-      };
+        // Cập nhật lạc quan state cart và phát CustomEvent mang theo dữ liệu mới
+        const addedQty = parseInt(quantity);
+        const addedAmount = product.costPrice * addedQty;
+        const updatedCart = {
+          ...currentCart,
+          totalQuantity: (currentCart.totalQuantity || 0) + addedQty,
+          totalAmount: (currentCart.totalAmount || 0) + addedAmount
+        };
+        localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+        window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
 
-      const resCart = await fetch(
-        `/api/carts/update/${currentCart.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(cartRequest),
-        }
-      );
-      if (resCart.ok) {
-        // Kích hoạt sự kiện để thông báo cập nhật giỏ hàng (ví dụ cho header cart icon)
-        window.dispatchEvent(new Event("cartUpdated"));
-      }
+        const cartRequest = {
+          quantity: addedQty,
+          totalAmount: product.costPrice, // Dùng costPrice (giá sale)
+        };
+
+        await fetch(
+          `/api/carts/update/${currentCart.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(cartRequest),
+          }
+        );
     } catch (error) {
       console.log("Lỗi thêm vào cart: ", error);
       toast.error("Failed to add to cart.");

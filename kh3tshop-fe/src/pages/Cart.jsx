@@ -46,13 +46,19 @@ const calculateSummary = (items) => {
 
 const Cart = () => {
     const navigate = useNavigate();
-    const [cartItems, setCartItems] = useState([]);
+    const [cartItems, setCartItems] = useState(() => {
+        const stored = localStorage.getItem("cachedCartItems");
+        return stored ? JSON.parse(stored) : [];
+    });
     const [select, setSelect] = useState([]);
     const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
     });
-    const [cart, setCart] = useState(null);
+    const [cart, setCart] = useState(() => {
+        const stored = localStorage.getItem("cachedCart");
+        return stored ? JSON.parse(stored) : null;
+    });
 
     const parseJsonResponse = async (response) => {
         const text = await response.text();
@@ -135,6 +141,7 @@ const Cart = () => {
             }
             console.log("Cart của user: ", data.result);
             setCart(data.result);
+            localStorage.setItem("cachedCart", JSON.stringify(data.result));
         } catch (error) {
             console.error("Lỗi fetch cart: ", error);
         }
@@ -171,6 +178,7 @@ const Cart = () => {
                     selected: item.selected !== undefined ? item.selected : item.isSelected,
                 }));
             setCartItems(items);
+            localStorage.setItem("cachedCartItems", JSON.stringify(items));
         } catch (err) {
             console.error("Lỗi hanldeFetchCart: ", err);
         }
@@ -211,173 +219,151 @@ const Cart = () => {
     }, [select]);
 
     const handleToggleIncrease = async (cartDetailId, priceAtTime) => {
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức
+        const updatedItems = cartItems.map((item) =>
+            item.id === cartDetailId
+                ? { ...item, quantity: item.quantity + 1, subtotal: item.subtotal + priceAtTime }
+                : item
+        );
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: cart.totalQuantity + 1,
+                totalAmount: cart.totalAmount + priceAtTime
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            // Phát CustomEvent mang theo data để Header cập nhật ngay tức thì 0ms!
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/${cartDetailId}/increase-quantity`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/${cartDetailId}/increase-quantity`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (!res.ok) {
-                console.error("Lỗi tăng số lượng", res.status, res.statusText);
-                return;
-            }
-
-            const data = await parseJsonResponse(res);
-            if (!data) {
-                console.error("Lỗi tăng số lượng: response rỗng hoặc không phải JSON");
-                return;
-            }
-
-            setCartItems((prev) =>
-                prev.map((item) =>
-                    item.id === cartDetailId
-                        ? {
-                              ...item,
-                              ...data,
-                              selected: data.selected !== undefined ? data.selected : data.isSelected,
-                          }
-                        : item
-                )
-            );
-            const resCart = await fetch(
-                `/api/carts/update/${cart.id}/increase`,
-                {
+                }),
+                fetch(`/api/carts/update/${cart.id}/increase`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ price: priceAtTime }),
-                }
-            );
-
-            await parseJsonResponse(resCart);
-            if (resCart.ok) {
-                window.dispatchEvent(new Event("cartUpdated"));
-            }
-            console.log("Update quantity response: ", data);
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi update quantity: ", err);
         }
     };
 
     const handleToggleDecrease = async (cartDetailId, priceAtTime) => {
+        const currentItem = cartItems.find((i) => i.id === cartDetailId);
+        if (!currentItem) return;
+
+        if (currentItem.quantity <= 1) {
+            handleDelete(cartDetailId, currentItem.quantity, currentItem.subtotal);
+            return;
+        }
+
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức
+        const updatedItems = cartItems.map((item) =>
+            item.id === cartDetailId
+                ? { ...item, quantity: item.quantity - 1, subtotal: item.subtotal - priceAtTime }
+                : item
+        );
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: cart.totalQuantity - 1,
+                totalAmount: cart.totalAmount - priceAtTime
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/${cartDetailId}/decrease-quantity`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/${cartDetailId}/decrease-quantity`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (!res.ok) {
-                console.error("Lỗi giảm số lượng", res.status, res.statusText);
-                return;
-            }
-
-            const data = await parseJsonResponse(res);
-            if (!data || data.quantity === 0) {
-                setCartItems((prev) => prev.filter((i) => i.id !== cartDetailId));
-                const resCart = await fetch(
-                    `/api/carts/update/${cart.id}/decrease`,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ price: priceAtTime }),
-                    }
-                );
-
-                await parseJsonResponse(resCart);
-                if (resCart.ok) {
-                    window.dispatchEvent(new Event("cartUpdated"));
-                }
-                return;
-            }
-            setCartItems((prev) =>
-                prev.map((item) =>
-                    item.id === cartDetailId
-                        ? {
-                              ...item,
-                              ...data,
-                              selected: data.selected !== undefined ? data.selected : data.isSelected,
-                          }
-                        : item
-                )
-            );
-            const resCart = await fetch(
-                `/api/carts/update/${cart.id}/decrease`,
-                {
+                }),
+                fetch(`/api/carts/update/${cart.id}/decrease`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ price: priceAtTime }),
-                }
-            );
-
-            await parseJsonResponse(resCart);
-            if (resCart.ok) {
-                window.dispatchEvent(new Event("cartUpdated"));
-            }
-            console.log("Update quantity response: ", data);
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi decrease quantity: ", err);
         }
     };
 
     const handleDelete = async (cartDetailId, quantity, subtotal) => {
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức (xóa item)
+        const updatedItems = cartItems.filter((item) => item.id !== cartDetailId);
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: Math.max(0, cart.totalQuantity - quantity),
+                totalAmount: Math.max(0, cart.totalAmount - subtotal)
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/delete/${cartDetailId}`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/delete/${cartDetailId}`, {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (res.ok) {
-                setCartItems(cartItems.filter((item) => item.id !== cartDetailId));
-                const resCart = await fetch(
-                    `/api/carts/update/${cart.id}/delete`,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ price: subtotal, quantity: quantity }),
-                    }
-                );
-
-                await parseJsonResponse(resCart);
-                if (resCart.ok) {
-                    window.dispatchEvent(new Event("cartUpdated"));
-                }
-            } else {
-                console.error("Delete failed:", res.statusText);
-            }
+                }),
+                fetch(`/api/carts/update/${cart.id}/delete`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ price: subtotal, quantity: quantity }),
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi xóa sản phẩm: ", err);
         }
     };
 

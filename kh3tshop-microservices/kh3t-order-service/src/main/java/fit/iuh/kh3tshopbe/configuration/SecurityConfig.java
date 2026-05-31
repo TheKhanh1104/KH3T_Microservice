@@ -42,6 +42,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                             "/admin", "/admin/**", "/staff/**").permitAll()
                     
                     // 2. CÁC API KHÔNG CẦN LOGIN
+                    .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/payment/sepay-callback").permitAll()
                     .requestMatchers(HttpMethod.POST, "/accounts").permitAll()
                     .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/introspect", "/auth/forgot-password", "/auth/reset-password").permitAll()

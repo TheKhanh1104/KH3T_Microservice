@@ -1,73 +1,115 @@
 version: '3.8'
+
 services:
   kh3t-discovery:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-discovery/Dockerfile
-    
     ports:
       - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
+    depends_on:
+      kh3t-mysql:
+        condition: service_healthy
+    restart: unless-stopped
 
   kh3t-identity-service:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-identity-service/Dockerfile
-    
-    ports:
-      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_identity?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kh3t-kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
-      mysql:
+      kh3t-mysql:
         condition: service_healthy
       kh3t-discovery:
         condition: service_started
+      kh3t-redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   kh3t-catalog-service:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-catalog-service/Dockerfile
-    
-    ports:
-      - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_catalog?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
-        mysql:
-          condition: service_healthy
-        kh3t-discovery:
-          condition: service_started
+      kh3t-mysql:
+        condition: service_healthy
+      kh3t-discovery:
+        condition: service_started
+      kh3t-redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   kh3t-order-service:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-order-service/Dockerfile
-    
-    ports:
-      - "8083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_order?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kh3t-kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
-        mysql:
-          condition: service_healthy
-        kh3t-discovery:
-          condition: service_started
+      kh3t-mysql:
+        condition: service_healthy
+      kh3t-discovery:
+        condition: service_started
+      kh3t-redis:
+        condition: service_healthy
+      kh3t-kafka:
+        condition: service_started
+    restart: unless-stopped
 
   kh3t-ai-service:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-ai-service/Dockerfile
-
-    ports:
-      - "8084:8084"
+    # No host port published to allow scaling multiple replicas.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
       CATALOG_SERVICE_URL: http://kh3t-catalog-service:8082
@@ -84,14 +126,20 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
+    restart: unless-stopped
 
   kh3t-gateway:
     build:
       context: ./kh3tshop-microservices
       dockerfile: kh3t-gateway/Dockerfile
-    
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://kh3t-discovery:8761/eureka/
     depends_on:
@@ -99,11 +147,43 @@ services:
         condition: service_started
       kh3t-identity-service:
         condition: service_started
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kh3t-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9090/-/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kh3t-grafana
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=kh3tadmin
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 networks:
   default:
     name: kh3t-network
-
-# NOTE: this compose file expects existing infrastructure services defined in docker-compose.yml
-# (kh3t-mysql, kh3t-redis, kh3t-zookeeper, kh3t-kafka). Start with:
-# docker compose -f docker-compose.yml -f docker-compose.services.yml up -d

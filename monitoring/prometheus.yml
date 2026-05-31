@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-actuator'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['kh3t-gateway:8080','kh3t-discovery:8761','kh3t-identity-service:8081','kh3t-catalog-service:8082','kh3t-order-service:8083','kh3t-ai-service:8084']
+
+# Add any additional scrape configs as needed

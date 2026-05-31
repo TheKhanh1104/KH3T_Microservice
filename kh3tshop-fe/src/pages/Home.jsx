@@ -1,6 +1,7 @@
 // src/pages/Home.jsx (hoặc src/views/Home.jsx – tùy bạn)
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchWithCache, CACHE_KEYS } from "../utils/apiCache";
 import {
   ShoppingBag,
   TrendingUp,
@@ -39,16 +40,12 @@ const Home = () => {
     };
   }, []);
 
-  // Lấy danh sách sản phẩm
+  // Lấy danh sách sản phẩm (có cache 5 phút)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/api/products");
-        if (response.ok) {
-          const data = await response.json();
-          const productList = Array.isArray(data) ? data : (data.result || []);
-          setProducts(productList);
-        }
+        const productList = await fetchWithCache("/api/products", CACHE_KEYS.PRODUCTS);
+        setProducts(Array.isArray(productList) ? productList : []);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {

@@ -24,18 +24,22 @@ const Order = () => {
       const token = localStorage.getItem("accessToken");
       let resolvedUserId = userId;
       if (!resolvedUserId) {
-        const meRes = await fetch(`/api/accounts/myinfor`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (meRes.ok) {
-          const meData = await meRes.json();
-          resolvedUserId = meData?.result?.id ? String(meData.result.id) : null;
-          if (resolvedUserId) {
-            localStorage.setItem("userId", resolvedUserId);
+        try {
+          const meRes = await fetch(`/api/accounts/myinfor`, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            resolvedUserId = meData?.result?.id ? String(meData.result.id) : null;
+            if (resolvedUserId) {
+              localStorage.setItem("userId", resolvedUserId);
+            }
           }
+        } catch (e) {
+          console.warn("Could not fetch user info:", e);
         }
       }
 
@@ -45,71 +49,73 @@ const Order = () => {
         return;
       }
 
-      const sagaRes = await fetch(`/api/orders/saga/user/${encodeURIComponent(resolvedUserId)}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Thử saga API trước
+      try {
+        const sagaRes = await fetch(`/api/orders/saga/user/${encodeURIComponent(resolvedUserId)}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (sagaRes.ok) {
-        const sagaData = await sagaRes.json();
-        // Đảm bảo sagaData là array trước khi gọi .map()
-        const sagaList = Array.isArray(sagaData)
-          ? sagaData
-          : Array.isArray(sagaData?.result)
-          ? sagaData.result
-          : [];
+        if (sagaRes.ok) {
+          const sagaData = await sagaRes.json();
+          // Đảm bảo sagaData là array trước khi gọi .map()
+          const sagaList = Array.isArray(sagaData)
+            ? sagaData
+            : Array.isArray(sagaData?.result)
+            ? sagaData.result
+            : [];
 
-        if (sagaList.length === 0) {
+          setOrders(
+            sagaList.map((order) => ({
+              id: order.id,
+              orderCode: order.id,
+              orderDate: order.createdAt,
+              statusOrder: order.status,
+              paymentMethod: order.paymentMethod || "CASH",
+              note: order.note || "",
+              totalAmount: order.totalAmount,
+              customerTrading: {
+                receiverName: order.userId,
+              },
+              orderDetails: (Array.isArray(order.items) ? order.items : []).map((item) => ({
+                id: item.id,
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalPrice: item.unitPrice * item.quantity,
+              })),
+            }))
+          );
+          return;
+        }
+      } catch (sagaErr) {
+        console.warn("Saga orders request failed:", sagaErr);
+      }
+
+      // Fallback: legacy orders API
+      try {
+        const res = await fetch(`/api/orders/account/${resolvedUserId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          console.error("Legacy orders API failed:", res.status);
           setOrders([]);
-          setLoading(false);
           return;
         }
 
-        setOrders(
-          sagaList.map((order) => ({
-            id: order.id,
-            orderCode: order.id,
-            orderDate: order.createdAt,
-            statusOrder: order.status,
-            paymentMethod: order.paymentMethod || "CASH",
-            note: order.note || "",
-            totalAmount: order.totalAmount,
-            customerTrading: {
-              receiverName: order.userId,
-            },
-            orderDetails: (order.items || []).map((item) => ({
-              id: item.id,
-              productId: item.productId,
-              productName: item.productName,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.unitPrice * item.quantity,
-            })),
-          }))
-        );
-        return;
-      }
-
-      console.warn("Saga orders request failed, falling back to legacy orders API");
-
-      const res = await fetch(`/api/orders/account/${resolvedUserId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => res.statusText);
-        console.error("Legacy orders API failed:", res.status, errText);
+        const data = await res.json();
+        setOrders(Array.isArray(data) ? data : Array.isArray(data?.result) ? data.result : []);
+      } catch (legacyErr) {
+        console.warn("Legacy orders request failed:", legacyErr);
         setOrders([]);
-        return;
       }
-
-      const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching orders:", error);
       setOrders([]);

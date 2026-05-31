@@ -10,6 +10,8 @@ import fit.iuh.kh3tshopbe.shared.entity.Product;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,10 +45,15 @@ public class ProductController {
     ProductCommandService productCommandService;
 
     @GetMapping
-    public ApiResponse<List<Product>> getAllProducts() {
-        return ApiResponse.<List<Product>>builder()
+    public ResponseEntity<ApiResponse<List<Product>>> getAllProducts() {
+        ApiResponse<List<Product>> body = ApiResponse.<List<Product>>builder()
                 .result(productQueryService.getAllProducts())
                 .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,
+                        CacheControl.maxAge(60, java.util.concurrent.TimeUnit.SECONDS)
+                                    .cachePublic().getHeaderValue())
+                .body(body);
     }
 
     @GetMapping("/{id}")

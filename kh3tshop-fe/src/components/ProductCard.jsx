@@ -91,6 +91,7 @@ const ProductCard = ({
             <img
               src={product.imageUrlFront}
               alt={product.name}
+              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
             />
 
@@ -233,6 +234,7 @@ const ProductCard = ({
           <img
             src={product.imageUrlFront}
             alt={product.name}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
           />
 

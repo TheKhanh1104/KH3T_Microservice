@@ -15,7 +15,7 @@ pipeline {
 
         stage('Build Backend') {
             steps {
-                dir('kh3tshop-be') {
+                dir('kh3tshop-microservices') {
                     sh 'mvn clean package -DskipTests'
                 }
             }
@@ -32,15 +32,15 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                sh 'docker-compose build'
+                sh 'docker-compose -f docker-compose.yml -f docker-compose.services.yml build'
                 // sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
-                // sh 'docker-compose push'
+                // sh 'docker-compose -f docker-compose.yml -f docker-compose.services.yml push'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'docker-compose up -d'
+                sh 'docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d'
             }
         }
     }

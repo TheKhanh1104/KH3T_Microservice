@@ -11,7 +11,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+        value: jdbc:mariadb://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
@@ -35,7 +35,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+        value: jdbc:mariadb://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
@@ -59,7 +59,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
+        value: jdbc:mariadb://bevs8sxunc3drvrbk4qs-mysql.services.clever-cloud.com:3306/bevs8sxunc3drvrbk4qs?createDatabaseIfNotExist=true
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD

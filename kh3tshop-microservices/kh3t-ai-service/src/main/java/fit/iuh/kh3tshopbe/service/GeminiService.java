@@ -36,8 +36,15 @@ public class GeminiService {
 
     @PostConstruct
     public void init() {
-        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
-        System.out.println("=== AI Service BASE URL: " + baseUrl + " ===");
+        String finalUrl = baseUrl;
+        if (finalUrl == null || finalUrl.isBlank()) {
+            finalUrl = "https://openrouter.ai/api/v1/";
+        }
+        if (!finalUrl.endsWith("/")) {
+            finalUrl += "/";
+        }
+        this.webClient = webClientBuilder.baseUrl(finalUrl).build();
+        System.out.println("=== AI Service BASE URL: " + finalUrl + " ===");
     }
 
     public String generateRawText(String prompt) {
@@ -46,9 +53,10 @@ public class GeminiService {
         }
 
         if (apiKey == null || apiKey.isBlank()) {
-            return "HỆ THỐNG: API Key chưa được nạp. Vui lòng kiểm tra môi trường hoặc file .env.";
+            return "HỆ THỐNG: API Key chưa được nạp. Vui lòng kiểm tra môi trường hoặc cấu hình GEMINI_API_KEY trên Render.";
         }
 
+        StringBuilder errorLog = new StringBuilder();
         for (String model : FALLBACK_MODELS) {
             try {
                 String result = callModel(model, prompt);
@@ -58,18 +66,22 @@ public class GeminiService {
                 }
             } catch (WebClientResponseException e) {
                 int status = e.getStatusCode().value();
-                System.out.println("=== Model " + model + " failed with " + status + ", trying next... ===");
-                // Không ném exception (throw e) để tiếp tục thử các model fallback khác nếu model này bị lỗi (như lỗi 400 do sai tên model hoặc hết quota)
+                String body = e.getResponseBodyAsString();
+                String errMsg = String.format("Model %s failed: HTTP %d - %s", model, status, body);
+                System.err.println("=== " + errMsg + " ===");
+                errorLog.append("- ").append(errMsg).append("\n");
             } catch (Exception e) {
-                System.out.println("=== Model " + model + " error: " + e.getMessage() + ", trying next... ===");
+                String errMsg = String.format("Model %s error: %s", model, e.getMessage());
+                System.err.println("=== " + errMsg + " ===");
+                errorLog.append("- ").append(errMsg).append("\n");
             }
         }
-        return null;
+        
+        // Thay vì trả về null làm hiển thị "Dạ em chưa hiểu lắm ạ!", trả về thông tin lỗi chi tiết để dev/user dễ chẩn đoán
+        return "Dạ hệ thống AI đang gặp lỗi kết nối đến OpenRouter. Chi tiết kỹ thuật:\n" + errorLog.toString();
     }
 
     public String generateText(String prompt) {
-        // Giữ lại phương thức này để không làm hỏng các code cũ nếu có, 
-        // nhưng bên trong sẽ gọi generateRawText
         if (prompt == null || prompt.isBlank()) {
             return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
         }
@@ -86,7 +98,7 @@ public class GeminiService {
         );
 
         Map<String, Object> response = webClient.post()
-                .uri("/chat/completions")
+                .uri("chat/completions") // Sử dụng relative URI để tránh bị WebClient loại bỏ '/api/v1' của baseUrl
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .header("HTTP-Referer", "http://localhost:8080")

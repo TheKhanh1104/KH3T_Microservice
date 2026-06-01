@@ -31,7 +31,7 @@ services:
       retries: 5
       start_period: 20s
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_identity?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mariadb://kh3t-mysql:3306/kh3t_identity?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
@@ -57,7 +57,7 @@ services:
       retries: 5
       start_period: 20s
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_catalog?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mariadb://kh3t-mysql:3306/kh3t_catalog?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
@@ -82,7 +82,7 @@ services:
       retries: 5
       start_period: 20s
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://kh3t-mysql:3306/kh3t_order?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mariadb://kh3t-mysql:3306/kh3t_order?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_DATA_REDIS_HOST: kh3t-redis
@@ -146,6 +146,17 @@ services:
       kh3t-discovery:
         condition: service_started
       kh3t-identity-service:
+        condition: service_started
+    restart: unless-stopped
+
+  kh3t-fe:
+    build:
+      context: ./kh3tshop-fe
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      kh3t-gateway:
         condition: service_started
     restart: unless-stopped
 

@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://kh3t-gateway.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

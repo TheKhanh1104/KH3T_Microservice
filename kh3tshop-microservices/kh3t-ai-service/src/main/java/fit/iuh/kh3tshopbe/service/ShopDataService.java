@@ -25,6 +25,9 @@ public class ShopDataService {
     @Value("${services.order.url}")
     private String orderBaseUrl;
 
+    @Value("${services.identity.url:http://localhost:8081}")
+    private String identityBaseUrl;
+
     public List<Map<String, Object>> getAllProducts() {
         return unwrapResult(fetchMap(catalogBaseUrl + "/products"));
     }
@@ -37,6 +40,10 @@ public class ShopDataService {
     public List<Map<String, Object>> getDetailedOrders() {
         List<Map<String, Object>> items = fetchList(orderBaseUrl + "/orders/detailed-orders");
         return items == null ? Collections.emptyList() : items;
+    }
+
+    public List<Map<String, Object>> getAllAccounts() {
+        return unwrapResult(fetchMap(identityBaseUrl + "/accounts"));
     }
 
     private Map<String, Object> fetchMap(String url) {

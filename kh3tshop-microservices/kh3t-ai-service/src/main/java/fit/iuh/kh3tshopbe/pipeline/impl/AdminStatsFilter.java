@@ -25,9 +25,21 @@ public class AdminStatsFilter implements AiFilter {
 
         context.appendSystemContext("Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.");
 
-        // Reusing the logic from your AdminChatController
+        // Append general revenue/order statistics
         String stats = generateAdminStats();
-        context.appendSystemContext("DỮ LIỆU THỐNG KÊ HIỆN TẠI:\n" + stats);
+        context.appendSystemContext("DỮ LIỆU THỐNG KÊ DOANH THU & ĐƠN HÀNG CHUNG:\n" + stats);
+
+        // Append detailed product inventory/stock
+        String stockInfo = getProductStockInfo();
+        context.appendSystemContext(stockInfo);
+
+        // Append detailed staff/employee info
+        String staffInfo = getStaffInfo();
+        context.appendSystemContext(staffInfo);
+
+        // Append detailed individual orders
+        String ordersInfo = getDetailedOrdersInfo();
+        context.appendSystemContext(ordersInfo);
     }
 
     private String generateAdminStats() {
@@ -92,6 +104,60 @@ Top 5 sản phẩm bán chạy: %s
 Đơn bị hủy: %d
 """, revenueToday, revenueLast7Days, highestRevenueDay != null ? highestRevenueDay : "Chưa có", 
 highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledOrders);
+    }
+
+    private String money(double amount) { return String.format("%,.0fđ", amount); }
+
+    private String getProductStockInfo() {
+        try {
+            List<Map<String, Object>> products = shopDataService.getAllProducts();
+            StringBuilder sb = new StringBuilder("\nDỮ LIỆU KHO HÀNG & TỒN KHO SẢN PHẨM HỆ THỐNG:\n");
+            for (Map<String, Object> p : products) {
+                sb.append(String.format("- SP ID %s: %s | Tồn kho: %s | Giá bán: %s | Form: %s | Chất liệu: %s\n",
+                    text(p.get("id")), text(p.get("name")), text(p.get("quantity")), money(numberValue(p.get("price"))),
+                    text(p.get("form")), text(p.get("material"))));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải dữ liệu kho hàng: " + e.getMessage() + "]\n";
+        }
+    }
+
+    private String getStaffInfo() {
+        try {
+            List<Map<String, Object>> accounts = shopDataService.getAllAccounts();
+            StringBuilder sb = new StringBuilder("\nDỮ LIỆU NHÂN VIÊN & ACCOUNT STAFF HỆ THỐNG:\n");
+            for (Map<String, Object> acc : accounts) {
+                String roleName = text(acc.get("role"));
+                if ("STAFF".equals(roleName)) {
+                    Map<String, Object> cust = (Map<String, Object>) acc.get("customer");
+                    String fullName = cust != null ? text(cust.get("fullName")) : "N/A";
+                    String email = cust != null ? text(cust.get("email")) : "N/A";
+                    String phone = cust != null ? text(cust.get("phoneNumber")) : "N/A";
+                    String status = text(acc.get("statusLogin"));
+                    sb.append(String.format("- Nhân viên: %s (Username: %s) | Email: %s | SĐT: %s | Trạng thái: %s\n",
+                        fullName, text(acc.get("username")), email, phone, status));
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải danh sách nhân viên: " + e.getMessage() + "]\n";
+        }
+    }
+
+    private String getDetailedOrdersInfo() {
+        try {
+            List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
+            StringBuilder sb = new StringBuilder("\nDANH SÁCH ĐƠN HÀNG CHI TIẾT ĐỂ BÁO CÁO:\n");
+            for (Map<String, Object> order : detailedOrders) {
+                sb.append(String.format("- Đơn %s | Khách: %s | Tổng tiền: %s | PTTT: %s | Trạng thái: %s | Ngày: %s | Số lượng sản phẩm: %s\n",
+                    text(order.get("id")), text(order.get("customer")), money(numberValue(order.get("total"))),
+                    text(order.get("payment")), text(order.get("status")), text(order.get("date")), text(order.get("items"))));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải danh sách đơn hàng: " + e.getMessage() + "]\n";
+        }
     }
 
     private LocalDate parseDate(Object v) {

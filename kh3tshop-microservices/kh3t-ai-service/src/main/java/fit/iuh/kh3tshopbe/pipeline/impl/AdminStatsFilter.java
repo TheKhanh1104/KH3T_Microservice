@@ -23,7 +23,12 @@ public class AdminStatsFilter implements AiFilter {
         String role = (String) context.getMetadata().get("role");
         if (!"ADMIN".equals(role)) return;
 
-        context.appendSystemContext("Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.");
+        context.appendSystemContext(
+            "Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.\n" +
+            "QUY TẮC HIỂN THỊ DỮ LIỆU CHO ADMIN:\n" +
+            "1. Khi hiển thị danh sách sản phẩm, danh sách hàng hết/sắp hết, danh sách đơn hàng hoặc dữ liệu nhân viên, bạn BẮT BUỘC phải dùng định dạng BẢNG MARKDOWN (Markdown Table) (ví dụ: | STT | ID | Tên sản phẩm | Tồn kho | Giá bán | ... |) để người dùng dễ quan sát trực quan.\n" +
+            "2. KHÔNG ĐƯỢC dùng danh sách dạng số (1., 2.) hay gạch đầu dòng thông thường cho dữ liệu bảng/danh sách thống kê."
+        );
 
         // Append general revenue/order statistics
         String stats = generateAdminStats();

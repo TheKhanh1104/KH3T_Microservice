@@ -1,0 +1,19 @@
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE wishlist_detail;
+TRUNCATE TABLE wishlist;
+TRUNCATE TABLE invoice;
+TRUNCATE TABLE order_detail;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE customer_trading;
+TRUNCATE TABLE cart_detail;
+TRUNCATE TABLE cart;
+TRUNCATE TABLE size_detail;
+TRUNCATE TABLE size;
+TRUNCATE TABLE product;
+TRUNCATE TABLE category;
+TRUNCATE TABLE address;
+TRUNCATE TABLE account;
+TRUNCATE TABLE customer;
+
+SET FOREIGN_KEY_CHECKS = 1;

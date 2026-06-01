@@ -28,7 +28,8 @@ VALUES
     (7, '2024-10-06', '$2a$10$asqFiSnfasSX4/g2fPID4ec9hxDWHbXDDTlN7FEwRpUjGz4itBlPm', 'USER', 'ACTIVE', '2024-10-06', 'CR7', 7),
     (8, '2024-10-07', '$2a$10$lzBHVSAD78l.eR/xM3IrEe2.iMhRwmuEXgSDrHSpJ0DoaojEMu3b2', 'USER', 'ACTIVE', '2024-10-07', 'Foden', 8),
     (9, '2024-10-08', '$2a$10$It2D4MaWB4Hq5PI9JyaUDu9.bscYWA7er6L3ZVv3B3FJl47ndvgH2', 'USER', 'LOCKED', '2024-10-08', 'Aguero', 9),
-    (10, '2024-10-09', '$2a$10$rL7cPLbyOKSb7x/ebJM3CuXvv5wC3Ksa6i6L9D.BCLwq0fg9gxRb.', 'STAFF', 'PENDING', '2024-10-09', 'Lionel Messi', 10);
+    (10, '2024-10-09', '$2a$10$rL7cPLbyOKSb7x/ebJM3CuXvv5wC3Ksa6i6L9D.BCLwq0fg9gxRb.', 'STAFF', 'PENDING', '2024-10-09', 'Lionel Messi', 10),
+    (11, '2025-01-01', '$2a$10$ezcfId8HGRycvLNNEQZdG.hLaSJ4xLvNoi0KRUkBU6tgu6vlKN2n2', 'ADMIN', 'ACTIVE', '2025-01-01', 'admin', NULL);
 
 
 

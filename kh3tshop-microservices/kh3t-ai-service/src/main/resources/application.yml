@@ -30,8 +30,8 @@ management:
 
 gemini:
   api:
-    key: ${GEMINI_API_KEY}
-  base-url: https://openrouter.ai/api/v1
+    key: ${GEMINI_API_KEY:}
+  base-url: ${GEMINI_BASE_URL:https://openrouter.ai/api/v1}
 
 services:
   catalog:

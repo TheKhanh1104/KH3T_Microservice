@@ -24,4 +24,6 @@ public class CreateOrderRequest {
     @NotEmpty
     @Valid
     private List<OrderItemDTO> items;
+    // Optional token used to match external payment callbacks
+    private String paymentToken;
 }

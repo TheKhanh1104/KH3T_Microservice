@@ -19,4 +19,5 @@ public class OrderRequest {
     private int account_id;
     private PaymentMethod paymentMethod;
     private List<OrderItemDTO> items;
+    private String paymentToken;
 }

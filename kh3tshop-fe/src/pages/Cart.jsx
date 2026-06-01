@@ -59,6 +59,9 @@ const Cart = () => {
         const stored = localStorage.getItem("cachedCart");
         return stored ? JSON.parse(stored) : null;
     });
+    const [loading, setLoading] = useState(() => {
+        return !!localStorage.getItem("accessToken");
+    });
 
     const parseJsonResponse = async (response) => {
         const text = await response.text();
@@ -76,6 +79,10 @@ const Cart = () => {
     const fetchUser = async () => {
         try {
             const token = localStorage.getItem("accessToken");
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
             const res = await fetch(`/api/accounts/myinfor`, {
                 headers: {
@@ -85,18 +92,21 @@ const Cart = () => {
             });
             if (!res.ok) {
                 console.error("Lỗi fetch user", res.status, res.statusText);
+                setLoading(false);
                 return;
             }
 
             const data = await parseJsonResponse(res);
             if (!data) {
                 console.error("Lỗi fetch user: response rỗng hoặc không phải JSON");
+                setLoading(false);
                 return;
             }
             console.log("Tài khoản đang login: ", data.result);
             setUser(data.result);
         } catch (error) {
             console.error("Lỗi fetch user", error);
+            setLoading(false);
         }
     };
 
@@ -114,12 +124,18 @@ const Cart = () => {
             } catch (e) {
                 console.warn("Lỗi parse user từ localStorage:", e);
             }
+        } else if (!localStorage.getItem("accessToken")) {
+            setLoading(false);
         }
     }, []);
 
     const fetchCartForUser = async (userId) => {
         try {
             const token = localStorage.getItem("accessToken");
+            if (!token) {
+                setLoading(false);
+                return;
+            }
             const res = await fetch(
                 `/api/carts/account/${userId}`,
                 {
@@ -131,12 +147,14 @@ const Cart = () => {
             );
             if (!res.ok) {
                 console.error("Lỗi fetch cart", res.status, res.statusText);
+                setLoading(false);
                 return;
             }
 
             const data = await parseJsonResponse(res);
             if (!data) {
                 console.error("Lỗi fetch cart: response rỗng hoặc không phải JSON");
+                setLoading(false);
                 return;
             }
             console.log("Cart của user: ", data.result);
@@ -144,6 +162,7 @@ const Cart = () => {
             localStorage.setItem("cachedCart", JSON.stringify(data.result));
         } catch (error) {
             console.error("Lỗi fetch cart: ", error);
+            setLoading(false);
         }
     };
 
@@ -155,6 +174,7 @@ const Cart = () => {
 
     const hanldeFetchCart = async () => {
         try {
+            setLoading(true);
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
                 `/api/cart-details/cart/${cart.id}`,
@@ -167,6 +187,7 @@ const Cart = () => {
             );
             if (!res.ok) {
                 console.error("Lỗi fetch cart details:", res.status, res.statusText);
+                setLoading(false);
                 return;
             }
             const data = await res.json();
@@ -181,6 +202,8 @@ const Cart = () => {
             localStorage.setItem("cachedCartItems", JSON.stringify(items));
         } catch (err) {
             console.error("Lỗi hanldeFetchCart: ", err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -370,6 +393,8 @@ const Cart = () => {
     useEffect(() => {
         if (cart?.id) {
             hanldeFetchCart();
+        } else {
+            setLoading(false);
         }
     }, [cart?.id]);
 
@@ -387,6 +412,17 @@ const Cart = () => {
             });
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500 border-solid"></div>
+                    <p className="text-gray-500 font-semibold text-lg animate-pulse">Loading your cart...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen py-10">

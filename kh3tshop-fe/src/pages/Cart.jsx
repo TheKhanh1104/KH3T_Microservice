@@ -371,7 +371,7 @@ const Cart = () => {
         if (cart?.id) {
             hanldeFetchCart();
         }
-    }, [cart]);
+    }, [cart?.id]);
 
     const summary = calculateSummary(cartItems);
 

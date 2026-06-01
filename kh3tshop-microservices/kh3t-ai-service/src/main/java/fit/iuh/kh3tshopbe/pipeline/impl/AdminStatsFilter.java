@@ -31,11 +31,25 @@ public class AdminStatsFilter implements AiFilter {
     }
 
     private String generateAdminStats() {
-        LocalDate today = LocalDate.now();
+        List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
+
+        // Dynamically find the latest order date to use as the reporting anchor ("today")
+        LocalDate today = null;
+        for (Map<String, Object> order : detailedOrders) {
+            LocalDate orderDate = parseDate(order.get("date"));
+            if (orderDate != null) {
+                if (today == null || orderDate.isAfter(today)) {
+                    today = orderDate;
+                }
+            }
+        }
+        if (today == null) {
+            today = LocalDate.now();
+        }
+
         LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate sevenDaysAgo = today.minusDays(7);
 
-        List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
         double revenueToday = 0;
         double revenueLast7Days = 0;
         Map<LocalDate, Double> revenueByDay = new HashMap<>();

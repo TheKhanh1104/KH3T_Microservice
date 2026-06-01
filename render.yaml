@@ -94,6 +94,12 @@ services:
         value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
+      - key: CATALOG_SERVICE_URL
+        value: https://kh3t-catalog-service.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://kh3t-order-service.onrender.com
+      - key: IDENTITY_SERVICE_URL
+        value: https://kh3t-identity-service.onrender.com
       - key: GEMINI_API_KEY
         sync: false
 

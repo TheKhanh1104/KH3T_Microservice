@@ -1,5 +1,6 @@
 // src/components/ChatBot.jsx
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { AI_SERVICE_PREFIX } from "../config/config";
 
 const ChatBot = () => {
@@ -227,11 +228,9 @@ const ChatBot = () => {
                     {msg.suggestedProducts && msg.suggestedProducts.length > 0 && (
                       <div className="mt-3 space-y-2">
                         {msg.suggestedProducts.map((product) => (
-                          <a
+                          <Link
                             key={product.id}
-                            href={`/product/${product.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            to={`/product/${product.id}`}
                             className="block p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:border-red-400 hover:shadow-lg transition-all transform hover:scale-105"
                           >
                             <div className="flex items-center justify-between">
@@ -241,16 +240,14 @@ const ChatBot = () => {
                               </div>
                               <span className="text-2xl ml-3">→</span>
                             </div>
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     )}
                     {msg.compareIds && msg.compareIds.length >= 2 && (
 <div className="mt-3 space-y-2">
-<a
-href={`/compare?ids=${msg.compareIds.join(',')}`}
-target="_blank"
-rel="noopener noreferrer"
+<Link
+to={`/compare?ids=${msg.compareIds.join(',')}`}
 className="block p-4 bg-red-50 rounded-xl border border-red-200 hover:border-red-400 hover:shadow-lg transition-all transform hover:scale-105"
 >
 <div className="flex items-center justify-between">
@@ -260,7 +257,7 @@ className="block p-4 bg-red-50 rounded-xl border border-red-200 hover:border-red
 </div>
 <span className="text-2xl ml-3">→</span>
 </div>
-</a>
+</Link>
 </div>
 )}
 

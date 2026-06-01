@@ -38,3 +38,5 @@ services:
     url: ${CATALOG_SERVICE_URL:http://localhost:8082}
   order:
     url: ${ORDER_SERVICE_URL:http://localhost:8083}
+  identity:
+    url: ${IDENTITY_SERVICE_URL:http://localhost:8081}

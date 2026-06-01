@@ -25,9 +25,7 @@ public class AdminStatsFilter implements AiFilter {
 
         context.appendSystemContext(
             "Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.\n" +
-            "QUY TẮC HIỂN THỊ DỮ LIỆU CHO ADMIN:\n" +
-            "1. Khi hiển thị danh sách sản phẩm, danh sách hàng hết/sắp hết, danh sách đơn hàng hoặc dữ liệu nhân viên, bạn BẮT BUỘC phải dùng định dạng BẢNG MARKDOWN (Markdown Table) (ví dụ: | STT | ID | Tên sản phẩm | Tồn kho | Giá bán | ... |) để người dùng dễ quan sát trực quan.\n" +
-            "2. KHÔNG ĐƯỢC dùng danh sách dạng số (1., 2.) hay gạch đầu dòng thông thường cho dữ liệu bảng/danh sách thống kê."
+            "Khi hiển thị danh sách sản phẩm, danh sách hàng hết/sắp hết, danh sách đơn hàng hoặc dữ liệu nhân viên, bạn BẮT BUỘC phải dùng định dạng BẢNG MARKDOWN (Markdown Table) (ví dụ: | STT | ID | Tên sản phẩm | Tồn kho | Giá bán | ... |) để người dùng dễ quan sát trực quan."
         );
 
         // Append general revenue/order statistics
@@ -117,8 +115,10 @@ highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledO
         try {
             List<Map<String, Object>> products = shopDataService.getAllProducts();
             StringBuilder sb = new StringBuilder("\nDỮ LIỆU KHO HÀNG & TỒN KHO SẢN PHẨM HỆ THỐNG:\n");
+            sb.append("| ID | Tên sản phẩm | Tồn kho | Giá bán | Form | Chất liệu |\n");
+            sb.append("|---|---|---|---|---|---|\n");
             for (Map<String, Object> p : products) {
-                sb.append(String.format("- SP ID %s: %s | Tồn kho: %s | Giá bán: %s | Form: %s | Chất liệu: %s\n",
+                sb.append(String.format("| %s | %s | %s | %s | %s | %s |\n",
                     text(p.get("id")), text(p.get("name")), text(p.get("quantity")), money(numberValue(p.get("price"))),
                     text(p.get("form")), text(p.get("material"))));
             }
@@ -132,6 +132,8 @@ highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledO
         try {
             List<Map<String, Object>> accounts = shopDataService.getAllAccounts();
             StringBuilder sb = new StringBuilder("\nDỮ LIỆU NHÂN VIÊN & ACCOUNT STAFF HỆ THỐNG:\n");
+            sb.append("| Tên nhân viên | Username | Email | SĐT | Trạng thái |\n");
+            sb.append("|---|---|---|---|---|\n");
             for (Map<String, Object> acc : accounts) {
                 String roleName = text(acc.get("role"));
                 if ("STAFF".equals(roleName)) {
@@ -140,7 +142,7 @@ highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledO
                     String email = cust != null ? text(cust.get("email")) : "N/A";
                     String phone = cust != null ? text(cust.get("phoneNumber")) : "N/A";
                     String status = text(acc.get("statusLogin"));
-                    sb.append(String.format("- Nhân viên: %s (Username: %s) | Email: %s | SĐT: %s | Trạng thái: %s\n",
+                    sb.append(String.format("| %s | %s | %s | %s | %s |\n",
                         fullName, text(acc.get("username")), email, phone, status));
                 }
             }
@@ -154,8 +156,10 @@ highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledO
         try {
             List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
             StringBuilder sb = new StringBuilder("\nDANH SÁCH ĐƠN HÀNG CHI TIẾT ĐỂ BÁO CÁO:\n");
+            sb.append("| Mã Đơn | Tên Khách Hàng | Tổng tiền | PTTT | Trạng thái | Ngày đặt | Số lượng SP |\n");
+            sb.append("|---|---|---|---|---|---|---|\n");
             for (Map<String, Object> order : detailedOrders) {
-                sb.append(String.format("- Đơn %s | Khách: %s | Tổng tiền: %s | PTTT: %s | Trạng thái: %s | Ngày: %s | Số lượng sản phẩm: %s\n",
+                sb.append(String.format("| %s | %s | %s | %s | %s | %s | %s |\n",
                     text(order.get("id")), text(order.get("customer")), money(numberValue(order.get("total"))),
                     text(order.get("payment")), text(order.get("status")), text(order.get("date")), text(order.get("items"))));
             }

@@ -54,7 +54,31 @@ const preprocessText = (text) => {
     }
   }
 
-  return lines.join("\n");
+  // Flatten the lines since some lines were split with \n
+  const flatLines = lines.join("\n").split("\n");
+
+  // 3. Clean up trailing characters (like emojis, tags, or short text) after the last pipe of a table row.
+  for (let i = 0; i < flatLines.length; i++) {
+    let line = flatLines[i].trim();
+    if (line.startsWith("|")) {
+      const lastPipeIdx = line.lastIndexOf("|");
+      if (lastPipeIdx > 0 && lastPipeIdx < line.length - 1) {
+        const trailingText = line.substring(lastPipeIdx + 1).trim();
+        if (trailingText.length > 0) {
+          const rowPart = line.substring(0, lastPipeIdx + 1).trim();
+          if (trailingText.length < 10) {
+            // It's a short tag, emoji, or space - trim it
+            flatLines[i] = rowPart;
+          } else {
+            // It's a long description - split it into a new line
+            flatLines[i] = rowPart + "\n" + trailingText;
+          }
+        }
+      }
+    }
+  }
+
+  return flatLines.join("\n").split("\n").map(l => l.trim()).join("\n");
 };
 
 const renderMessageText = (text) => {

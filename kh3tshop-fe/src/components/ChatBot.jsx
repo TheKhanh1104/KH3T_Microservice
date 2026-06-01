@@ -3,6 +3,110 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AI_SERVICE_PREFIX } from "../config/config";
 
+const renderTable = (table, key) => {
+  return (
+    <div key={key} className="my-3 overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+      <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <thead className="bg-red-50 text-red-800 font-semibold">
+          <tr>
+            {table.headers.map((header, idx) => (
+              <th key={idx} className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-100">
+          {table.rows.map((row, rowIdx) => (
+            <tr key={rowIdx} className={rowIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+              {row.map((cell, cellIdx) => (
+                <td key={cellIdx} className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const renderMessageText = (text) => {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const elements = [];
+  let currentTable = null;
+  let inTable = false;
+
+  const parseInlineMarkdown = (str) => {
+    const parts = str.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-bold text-gray-900">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (line.startsWith("|") && line.endsWith("|")) {
+      const cells = line.split("|").map(c => c.trim()).filter((_, index, arr) => index > 0 && index < arr.length - 1);
+      
+      if (cells.every(c => /^[-:]+$/.test(c))) {
+        continue;
+      }
+
+      if (!inTable) {
+        inTable = true;
+        currentTable = { headers: cells, rows: [] };
+      } else {
+        currentTable.rows.push(cells);
+      }
+    } else {
+      if (inTable && currentTable) {
+        elements.push(renderTable(currentTable, elements.length));
+        inTable = false;
+        currentTable = null;
+      }
+
+      if (line !== "") {
+        if (line.startsWith("* ") || line.startsWith("- ")) {
+          elements.push(
+            <li key={i} className="ml-5 list-disc leading-relaxed text-gray-700">
+              {parseInlineMarkdown(line.substring(2))}
+            </li>
+          );
+        } else if (/^\d+\.\s/.test(line)) {
+          const dotIdx = line.indexOf(". ");
+          elements.push(
+            <li key={i} className="ml-5 list-decimal leading-relaxed text-gray-700">
+              {parseInlineMarkdown(line.substring(dotIdx + 2))}
+            </li>
+          );
+        } else {
+          elements.push(
+            <p key={i} className="mb-2 last:mb-0 leading-relaxed text-gray-700">
+              {parseInlineMarkdown(lines[i])}
+            </p>
+          );
+        }
+      } else {
+        elements.push(<div key={i} className="h-2"></div>);
+      }
+    }
+  }
+
+  if (inTable && currentTable) {
+    elements.push(renderTable(currentTable, elements.length));
+  }
+
+  return <div className="space-y-1">{elements}</div>;
+};
+
 const ChatBot = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -220,8 +324,8 @@ const ChatBot = () => {
                   </div>
                 ) : (
                   <div className="max-w-lg">
-                    <div className="px-4 py-3 bg-white rounded-2xl shadow rounded-tl-none whitespace-pre-wrap">
-                      {msg.text}
+                    <div className="px-4 py-3 bg-white rounded-2xl shadow rounded-tl-none text-gray-800">
+                      {renderMessageText(msg.text)}
                     </div>
 
                     {/* Hiển thị sản phẩm gợi ý nếu có */}

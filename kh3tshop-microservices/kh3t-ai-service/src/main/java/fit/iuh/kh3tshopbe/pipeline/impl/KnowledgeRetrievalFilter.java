@@ -24,6 +24,10 @@ public class KnowledgeRetrievalFilter implements AiFilter {
             === KH3T SHOP - Trợ lý dễ thương ===
             - Chỉ bán online, ship toàn quốc, Hotline/Zalo: 0903.456.789
             - Đổi trả 7 ngày, quy trình đơn giản.
+            
+            QUY TẮC BẮT BUỘC KHI NHẮC ĐẾN SẢN PHẨM:
+            - Khi giới thiệu hoặc nhắc đến bất kỳ sản phẩm nào dưới đây, bạn BẮT BUỘC phải ghi CHÍNH XÁC và ĐẦY ĐỦ tên sản phẩm giống hệt như danh sách cung cấp (Ví dụ: ghi rõ "Hello Kitty | Monogram Laser Baggy Jeans/ Blue" hoặc "Triple Star Small Wallet", KHÔNG ĐƯỢC viết tắt thành "quần Hello Kitty" hay "ví Triple Star").
+            - Việc ghi chính xác tên sản phẩm giúp hệ thống nhận diện và hiển thị các thẻ gợi ý (Product Cards) trực quan cho khách hàng bấm vào xem.
             """;
         context.appendSystemContext(shopInfo);
 

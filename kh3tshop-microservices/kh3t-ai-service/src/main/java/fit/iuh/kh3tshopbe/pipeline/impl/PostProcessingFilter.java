@@ -38,12 +38,16 @@ public class PostProcessingFilter implements AiFilter {
             if (productName.isEmpty()) continue;
             
             String normalizedName = productName.replace(" ", "").replace("-", "").replace("&", "");
+            String cleanName = productName.replace("|", " ").replace("/", " ").replace("-", " ").replace("&", " ").replaceAll("\\s+", " ").trim();
+            String cleanNoSpace = cleanName.replace(" ", "");
 
             boolean mentioned = lowerReply.contains(productName)
                     || lowerReply.contains(normalizedName)
                     || lowerReply.contains(productName.replace(" ", ""))
                     || lowerReply.contains(productName.replace("-", ""))
-                    || lowerReply.contains(productName.replace("&", ""));
+                    || lowerReply.contains(productName.replace("&", ""))
+                    || (!cleanName.isEmpty() && lowerReply.contains(cleanName))
+                    || (!cleanNoSpace.isEmpty() && lowerReply.contains(cleanNoSpace));
 
             if (mentioned) {
                 Long id = longValue(product.get("id"));

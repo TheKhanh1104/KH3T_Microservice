@@ -45,6 +45,7 @@ public class ChatController {
             Map<String, Object> initialMetadata = new HashMap<>();
             initialMetadata.put("history", new ArrayList<>(history));
             initialMetadata.put("userId", userId);
+            initialMetadata.put("role", getRoleFromRequest(request));
 
             // THỰC THI PIPELINE
             AiContext context = aiPipelineManager.execute(userPrompt, initialMetadata);
@@ -99,6 +100,19 @@ public class ChatController {
             return body.getOrDefault("sub", body.getOrDefault("username", "user_unknown")).toString();
         } catch (Exception e) {
             return "guest_fallback";
+        }
+    }
+
+    private String getRoleFromRequest(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) return "USER";
+        try {
+            String token = header.substring(7);
+            String payload = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]));
+            Map<String, Object> body = new ObjectMapper().readValue(payload, Map.class);
+            return body.getOrDefault("scope", "USER").toString();
+        } catch (Exception e) {
+            return "USER";
         }
     }
 

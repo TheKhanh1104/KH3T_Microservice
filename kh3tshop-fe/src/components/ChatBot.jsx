@@ -32,10 +32,36 @@ const renderTable = (table, key) => {
   );
 };
 
+const preprocessText = (text) => {
+  if (!text) return "";
+
+  // 1. Split adjacent rows on the same line (separated by | | or ||)
+  let normalized = text.replace(/\|\s*\|/g, "|\n|");
+
+  // 2. If a line contains multiple pipes but does not start with a pipe,
+  // split the prefix text from the table start (the first pipe).
+  const lines = normalized.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes("|") && !line.trim().startsWith("|")) {
+      const firstPipeIdx = line.indexOf("|");
+      const lastPipeIdx = line.lastIndexOf("|");
+      if (firstPipeIdx !== lastPipeIdx) {
+        const prefix = line.substring(0, firstPipeIdx).trim();
+        const tablePart = line.substring(firstPipeIdx).trim();
+        lines[i] = prefix + "\n" + tablePart;
+      }
+    }
+  }
+
+  return lines.join("\n");
+};
+
 const renderMessageText = (text) => {
   if (!text) return null;
 
-  const lines = text.split("\n");
+  const preprocessed = preprocessText(text);
+  const lines = preprocessed.split("\n");
   const elements = [];
   let currentTable = null;
   let inTable = false;

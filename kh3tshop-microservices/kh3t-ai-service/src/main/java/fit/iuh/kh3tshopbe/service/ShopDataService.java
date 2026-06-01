@@ -3,11 +3,16 @@ package fit.iuh.kh3tshopbe.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.util.retry.Retry;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class ShopDataService {
@@ -40,6 +45,9 @@ public class ShopDataService {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(3))
+                            .maxBackoff(Duration.ofSeconds(5))
+                            .filter(this::isRetryableException))
                     .block();
             return response == null ? Collections.emptyMap() : response;
         } catch (Exception e) {
@@ -54,6 +62,9 @@ public class ShopDataService {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(3))
+                            .maxBackoff(Duration.ofSeconds(5))
+                            .filter(this::isRetryableException))
                     .block();
             return response == null ? Collections.emptyList() : response;
         } catch (Exception e) {
@@ -71,5 +82,14 @@ public class ShopDataService {
                     .toList();
         }
         return Collections.emptyList();
+    }
+
+    private boolean isRetryableException(Throwable throwable) {
+        if (throwable instanceof WebClientRequestException) {
+            return true;
+        }
+
+        return throwable instanceof TimeoutException
+                || throwable instanceof IOException;
     }
 }

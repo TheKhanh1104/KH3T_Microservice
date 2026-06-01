@@ -4,9 +4,14 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -97,6 +102,9 @@ public class GeminiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+            .retryWhen(Retry.backoff(3, Duration.ofSeconds(3))
+                .maxBackoff(Duration.ofSeconds(5))
+                .filter(this::isRetryableException))
                 .block();
 
         if (response == null || !response.containsKey("choices")) return null;
@@ -112,5 +120,16 @@ public class GeminiService {
 
         Object content = message.get("content");
         return content == null ? null : content.toString().trim();
+    }
+
+    private boolean isRetryableException(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException exception) {
+            int status = exception.getStatusCode().value();
+            return status == 429 || status >= 500;
+        }
+
+        return throwable instanceof WebClientRequestException
+                || throwable instanceof TimeoutException
+                || throwable instanceof IOException;
     }
 }

@@ -1,6 +1,161 @@
 // src/components/ChatBot.jsx
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { AI_SERVICE_PREFIX } from "../config/config";
+
+const renderTable = (table, key) => {
+  return (
+    <div key={key} className="my-3 overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+      <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <thead className="bg-red-50 text-red-800 font-semibold">
+          <tr>
+            {table.headers.map((header, idx) => (
+              <th key={idx} className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-100">
+          {table.rows.map((row, rowIdx) => (
+            <tr key={rowIdx} className={rowIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+              {row.map((cell, cellIdx) => (
+                <td key={cellIdx} className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const preprocessText = (text) => {
+  if (!text) return "";
+
+  // 1. Split adjacent rows on the same line (separated by | | or ||)
+  let normalized = text.replace(/\|\s*\|/g, "|\n|");
+
+  // 2. If a line contains multiple pipes but does not start with a pipe,
+  // split the prefix text from the table start (the first pipe).
+  const lines = normalized.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes("|") && !line.trim().startsWith("|")) {
+      const firstPipeIdx = line.indexOf("|");
+      const lastPipeIdx = line.lastIndexOf("|");
+      if (firstPipeIdx !== lastPipeIdx) {
+        const prefix = line.substring(0, firstPipeIdx).trim();
+        const tablePart = line.substring(firstPipeIdx).trim();
+        lines[i] = prefix + "\n" + tablePart;
+      }
+    }
+  }
+
+  // Flatten the lines since some lines were split with \n
+  const flatLines = lines.join("\n").split("\n");
+
+  // 3. Clean up trailing characters (like emojis, tags, or short text) after the last pipe of a table row.
+  for (let i = 0; i < flatLines.length; i++) {
+    let line = flatLines[i].trim();
+    if (line.startsWith("|")) {
+      const lastPipeIdx = line.lastIndexOf("|");
+      if (lastPipeIdx > 0 && lastPipeIdx < line.length - 1) {
+        const trailingText = line.substring(lastPipeIdx + 1).trim();
+        if (trailingText.length > 0) {
+          const rowPart = line.substring(0, lastPipeIdx + 1).trim();
+          if (trailingText.length < 10) {
+            // It's a short tag, emoji, or space - trim it
+            flatLines[i] = rowPart;
+          } else {
+            // It's a long description - split it into a new line
+            flatLines[i] = rowPart + "\n" + trailingText;
+          }
+        }
+      }
+    }
+  }
+
+  return flatLines.join("\n").split("\n").map(l => l.trim()).join("\n");
+};
+
+const renderMessageText = (text) => {
+  if (!text) return null;
+
+  const preprocessed = preprocessText(text);
+  const lines = preprocessed.split("\n");
+  const elements = [];
+  let currentTable = null;
+  let inTable = false;
+
+  const parseInlineMarkdown = (str) => {
+    const parts = str.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-bold text-gray-900">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (line.startsWith("|") && line.endsWith("|")) {
+      const cells = line.split("|").map(c => c.trim()).filter((_, index, arr) => index > 0 && index < arr.length - 1);
+      
+      if (cells.every(c => /^[-:]+$/.test(c))) {
+        continue;
+      }
+
+      if (!inTable) {
+        inTable = true;
+        currentTable = { headers: cells, rows: [] };
+      } else {
+        currentTable.rows.push(cells);
+      }
+    } else {
+      if (inTable && currentTable) {
+        elements.push(renderTable(currentTable, elements.length));
+        inTable = false;
+        currentTable = null;
+      }
+
+      if (line !== "") {
+        if (line.startsWith("* ") || line.startsWith("- ")) {
+          elements.push(
+            <li key={i} className="ml-5 list-disc leading-relaxed text-gray-700">
+              {parseInlineMarkdown(line.substring(2))}
+            </li>
+          );
+        } else if (/^\d+\.\s/.test(line)) {
+          const dotIdx = line.indexOf(". ");
+          elements.push(
+            <li key={i} className="ml-5 list-decimal leading-relaxed text-gray-700">
+              {parseInlineMarkdown(line.substring(dotIdx + 2))}
+            </li>
+          );
+        } else {
+          elements.push(
+            <p key={i} className="mb-2 last:mb-0 leading-relaxed text-gray-700">
+              {parseInlineMarkdown(lines[i])}
+            </p>
+          );
+        }
+      } else {
+        elements.push(<div key={i} className="h-2"></div>);
+      }
+    }
+  }
+
+  if (inTable && currentTable) {
+    elements.push(renderTable(currentTable, elements.length));
+  }
+
+  return <div className="space-y-1">{elements}</div>;
+};
 
 const ChatBot = () => {
   const [chatOpen, setChatOpen] = useState(false);
@@ -219,19 +374,17 @@ const ChatBot = () => {
                   </div>
                 ) : (
                   <div className="max-w-lg">
-                    <div className="px-4 py-3 bg-white rounded-2xl shadow rounded-tl-none whitespace-pre-wrap">
-                      {msg.text}
+                    <div className="px-4 py-3 bg-white rounded-2xl shadow rounded-tl-none text-gray-800">
+                      {renderMessageText(msg.text)}
                     </div>
 
                     {/* Hiển thị sản phẩm gợi ý nếu có */}
                     {msg.suggestedProducts && msg.suggestedProducts.length > 0 && (
                       <div className="mt-3 space-y-2">
                         {msg.suggestedProducts.map((product) => (
-                          <a
+                          <Link
                             key={product.id}
-                            href={`/product/${product.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            to={`/product/${product.id}`}
                             className="block p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:border-red-400 hover:shadow-lg transition-all transform hover:scale-105"
                           >
                             <div className="flex items-center justify-between">
@@ -241,16 +394,14 @@ const ChatBot = () => {
                               </div>
                               <span className="text-2xl ml-3">→</span>
                             </div>
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     )}
                     {msg.compareIds && msg.compareIds.length >= 2 && (
 <div className="mt-3 space-y-2">
-<a
-href={`/compare?ids=${msg.compareIds.join(',')}`}
-target="_blank"
-rel="noopener noreferrer"
+<Link
+to={`/compare?ids=${msg.compareIds.join(',')}`}
 className="block p-4 bg-red-50 rounded-xl border border-red-200 hover:border-red-400 hover:shadow-lg transition-all transform hover:scale-105"
 >
 <div className="flex items-center justify-between">
@@ -260,7 +411,7 @@ className="block p-4 bg-red-50 rounded-xl border border-red-200 hover:border-red
 </div>
 <span className="text-2xl ml-3">→</span>
 </div>
-</a>
+</Link>
 </div>
 )}
 

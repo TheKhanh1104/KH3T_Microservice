@@ -74,7 +74,10 @@ export default function Header() {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
-  const [cart, setCart] = useState(null);
+  const [cart, setCart] = useState(() => {
+    const stored = localStorage.getItem("cachedCart");
+    return stored ? JSON.parse(stored) : null;
+  });
 
   const fetchUser = async () => {
     const token = localStorage.getItem("accessToken");
@@ -135,6 +138,7 @@ export default function Header() {
       }
       console.log("Cart của user: ", data.result);
       setCart(data.result);
+      localStorage.setItem("cachedCart", JSON.stringify(data.result));
     } catch (error) {
       console.error("Lỗi fetch cart: ", error);
     }
@@ -147,8 +151,11 @@ export default function Header() {
   }, [user]);
 
   useEffect(() => {
-    const handleCartUpdated = () => {
-      if (user?.id) {
+    const handleCartUpdated = (e) => {
+      if (e.detail) {
+        setCart(e.detail);
+        localStorage.setItem("cachedCart", JSON.stringify(e.detail));
+      } else if (user?.id) {
         fetchCart();
       }
     };

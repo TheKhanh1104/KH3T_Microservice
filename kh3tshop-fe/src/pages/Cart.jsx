@@ -46,13 +46,22 @@ const calculateSummary = (items) => {
 
 const Cart = () => {
     const navigate = useNavigate();
-    const [cartItems, setCartItems] = useState([]);
+    const [cartItems, setCartItems] = useState(() => {
+        const stored = localStorage.getItem("cachedCartItems");
+        return stored ? JSON.parse(stored) : [];
+    });
     const [select, setSelect] = useState([]);
     const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
     });
-    const [cart, setCart] = useState(null);
+    const [cart, setCart] = useState(() => {
+        const stored = localStorage.getItem("cachedCart");
+        return stored ? JSON.parse(stored) : null;
+    });
+    const [loading, setLoading] = useState(() => {
+        return !!localStorage.getItem("accessToken");
+    });
 
     const parseJsonResponse = async (response) => {
         const text = await response.text();
@@ -70,6 +79,10 @@ const Cart = () => {
     const fetchUser = async () => {
         try {
             const token = localStorage.getItem("accessToken");
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
             const res = await fetch(`/api/accounts/myinfor`, {
                 headers: {
@@ -79,30 +92,52 @@ const Cart = () => {
             });
             if (!res.ok) {
                 console.error("Lỗi fetch user", res.status, res.statusText);
+                setLoading(false);
                 return;
             }
 
             const data = await parseJsonResponse(res);
             if (!data) {
                 console.error("Lỗi fetch user: response rỗng hoặc không phải JSON");
+                setLoading(false);
                 return;
             }
             console.log("Tài khoản đang login: ", data.result);
             setUser(data.result);
         } catch (error) {
             console.error("Lỗi fetch user", error);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchUser();
+        
+        // Tối ưu hóa: Load nhanh giỏ hàng song song nếu có user trong localStorage
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                if (parsed && parsed.id) {
+                    fetchCartForUser(parsed.id);
+                }
+            } catch (e) {
+                console.warn("Lỗi parse user từ localStorage:", e);
+            }
+        } else if (!localStorage.getItem("accessToken")) {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchCart = async () => {
+    const fetchCartForUser = async (userId) => {
         try {
             const token = localStorage.getItem("accessToken");
+            if (!token) {
+                setLoading(false);
+                return;
+            }
             const res = await fetch(
-                `/api/carts/account/${user.id}`,
+                `/api/carts/account/${userId}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -112,29 +147,34 @@ const Cart = () => {
             );
             if (!res.ok) {
                 console.error("Lỗi fetch cart", res.status, res.statusText);
+                setLoading(false);
                 return;
             }
 
             const data = await parseJsonResponse(res);
             if (!data) {
                 console.error("Lỗi fetch cart: response rỗng hoặc không phải JSON");
+                setLoading(false);
                 return;
             }
             console.log("Cart của user: ", data.result);
             setCart(data.result);
+            localStorage.setItem("cachedCart", JSON.stringify(data.result));
         } catch (error) {
             console.error("Lỗi fetch cart: ", error);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         if (user?.id) {
-            fetchCart();
+            fetchCartForUser(user.id);
         }
     }, [user]);
 
     const hanldeFetchCart = async () => {
         try {
+            setLoading(true);
             const token = localStorage.getItem("accessToken");
             const res = await fetch(
                 `/api/cart-details/cart/${cart.id}`,
@@ -145,20 +185,28 @@ const Cart = () => {
                     },
                 }
             );
-            const data = await res.json();
-            const newCartItems = [];
-            for (const cd of data) {
-                console.log(cd);
+            if (!res.ok) {
+                console.error("Lỗi fetch cart details:", res.status, res.statusText);
+                setLoading(false);
+                return;
             }
+            const data = await res.json();
             console.log("Cart API: ", data);
-            const items = Array.isArray(data)
+            const items = (Array.isArray(data)
                 ? data
-                : data.result || data.cartDetails || [];
+                : data.result || data.cartDetails || []).map((item) => ({
+                    ...item,
+                    selected: item.selected !== undefined ? item.selected : item.isSelected,
+                }));
             setCartItems(items);
+            localStorage.setItem("cachedCartItems", JSON.stringify(items));
         } catch (err) {
-            console.error("Lỗi: ", err);
+            console.error("Lỗi hanldeFetchCart: ", err);
+        } finally {
+            setLoading(false);
         }
     };
+
 
     const handleToggleSelect = async (cartDetailId) => {
         const updatedItems = cartItems.map((item) =>
@@ -194,169 +242,161 @@ const Cart = () => {
     }, [select]);
 
     const handleToggleIncrease = async (cartDetailId, priceAtTime) => {
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức
+        const updatedItems = cartItems.map((item) =>
+            item.id === cartDetailId
+                ? { ...item, quantity: item.quantity + 1, subtotal: item.subtotal + priceAtTime }
+                : item
+        );
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: cart.totalQuantity + 1,
+                totalAmount: cart.totalAmount + priceAtTime
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            // Phát CustomEvent mang theo data để Header cập nhật ngay tức thì 0ms!
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/${cartDetailId}/increase-quantity`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/${cartDetailId}/increase-quantity`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (!res.ok) {
-                console.error("Lỗi tăng số lượng", res.status, res.statusText);
-                return;
-            }
-
-            const data = await parseJsonResponse(res);
-            if (!data) {
-                console.error("Lỗi tăng số lượng: response rỗng hoặc không phải JSON");
-                return;
-            }
-
-            setCartItems((prev) =>
-                prev.map((item) =>
-                    item.id === cartDetailId ? { ...item, ...data } : item
-                )
-            );
-            const resCart = await fetch(
-                `/api/carts/update/${cart.id}/increase`,
-                {
+                }),
+                fetch(`/api/carts/update/${cart.id}/increase`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ price: priceAtTime }),
-                }
-            );
-
-            await parseJsonResponse(resCart);
-            if (resCart.ok) {
-                window.dispatchEvent(new Event("cartUpdated"));
-            }
-            console.log("Update quantity response: ", data);
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi update quantity: ", err);
         }
     };
 
     const handleToggleDecrease = async (cartDetailId, priceAtTime) => {
+        const currentItem = cartItems.find((i) => i.id === cartDetailId);
+        if (!currentItem) return;
+
+        if (currentItem.quantity <= 1) {
+            handleDelete(cartDetailId, currentItem.quantity, currentItem.subtotal);
+            return;
+        }
+
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức
+        const updatedItems = cartItems.map((item) =>
+            item.id === cartDetailId
+                ? { ...item, quantity: item.quantity - 1, subtotal: item.subtotal - priceAtTime }
+                : item
+        );
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: cart.totalQuantity - 1,
+                totalAmount: cart.totalAmount - priceAtTime
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/${cartDetailId}/decrease-quantity`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/${cartDetailId}/decrease-quantity`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (!res.ok) {
-                console.error("Lỗi giảm số lượng", res.status, res.statusText);
-                return;
-            }
-
-            const data = await parseJsonResponse(res);
-            if (!data || data.quantity === 0) {
-                setCartItems((prev) => prev.filter((i) => i.id !== cartDetailId));
-                const resCart = await fetch(
-                    `/api/carts/update/${cart.id}/decrease`,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ price: priceAtTime }),
-                    }
-                );
-
-                await parseJsonResponse(resCart);
-                if (resCart.ok) {
-                    window.dispatchEvent(new Event("cartUpdated"));
-                }
-                return;
-            }
-            setCartItems((prev) =>
-                prev.map((item) =>
-                    item.id === cartDetailId ? { ...item, ...data } : item
-                )
-            );
-            const resCart = await fetch(
-                `/api/carts/update/${cart.id}/decrease`,
-                {
+                }),
+                fetch(`/api/carts/update/${cart.id}/decrease`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ price: priceAtTime }),
-                }
-            );
-
-            await parseJsonResponse(resCart);
-            if (resCart.ok) {
-                window.dispatchEvent(new Event("cartUpdated"));
-            }
-            console.log("Update quantity response: ", data);
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi decrease quantity: ", err);
         }
     };
 
     const handleDelete = async (cartDetailId, quantity, subtotal) => {
+        // 1. Cập nhật lạc quan state cartItems ngay lập tức (xóa item)
+        const updatedItems = cartItems.filter((item) => item.id !== cartDetailId);
+        setCartItems(updatedItems);
+        localStorage.setItem("cachedCartItems", JSON.stringify(updatedItems));
+
+        // 2. Cập nhật lạc quan state cart ngay lập tức
+        let updatedCart = null;
+        if (cart) {
+            updatedCart = {
+                ...cart,
+                totalQuantity: Math.max(0, cart.totalQuantity - quantity),
+                totalAmount: Math.max(0, cart.totalAmount - subtotal)
+            };
+            setCart(updatedCart);
+            localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+            window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+        }
+
+        // 3. Gọi API đồng bộ ngầm
         try {
             const token = localStorage.getItem("accessToken");
-            const res = await fetch(
-                `/api/cart-details/delete/${cartDetailId}`,
-                {
+            Promise.all([
+                fetch(`/api/cart-details/delete/${cartDetailId}`, {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                }
-            );
-
-            if (res.ok) {
-                setCartItems(cartItems.filter((item) => item.id !== cartDetailId));
-                const resCart = await fetch(
-                    `/api/carts/update/${cart.id}/delete`,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ price: subtotal, quantity: quantity }),
-                    }
-                );
-
-                await parseJsonResponse(resCart);
-                if (resCart.ok) {
-                    window.dispatchEvent(new Event("cartUpdated"));
-                }
-            } else {
-                console.error("Delete failed:", res.statusText);
-            }
+                }),
+                fetch(`/api/carts/update/${cart.id}/delete`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ price: subtotal, quantity: quantity }),
+                })
+            ]);
         } catch (err) {
-            console.error("Lỗi update select: ", err);
+            console.error("Lỗi xóa sản phẩm: ", err);
         }
     };
 
     useEffect(() => {
         if (cart?.id) {
             hanldeFetchCart();
+        } else {
+            setLoading(false);
         }
-    }, [cart]);
+    }, [cart?.id]);
 
     const summary = calculateSummary(cartItems);
 
@@ -372,6 +412,17 @@ const Cart = () => {
             });
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500 border-solid"></div>
+                    <p className="text-gray-500 font-semibold text-lg animate-pulse">Loading your cart...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen py-10">

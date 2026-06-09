@@ -11,7 +11,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mariadb://hv-par6-004.clvrcld.net:12181/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+        value: jdbc:mariadb://hv-sgp1-003.clvrcld.net:14700/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
@@ -39,7 +39,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mariadb://hv-par6-004.clvrcld.net:12181/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+        value: jdbc:mariadb://hv-sgp1-003.clvrcld.net:14700/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
@@ -67,7 +67,7 @@ services:
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mariadb://hv-par6-004.clvrcld.net:12181/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+        value: jdbc:mariadb://hv-sgp1-003.clvrcld.net:14700/bdn7ruaxqdmz1bhougtm?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       - key: SPRING_DATASOURCE_USERNAME
         value: u0gfjpm1l8qfzgvi
       - key: SPRING_DATASOURCE_PASSWORD
@@ -94,9 +94,14 @@ services:
         value: -XX:MaxRAMPercentage=75.0 -XX:ActiveProcessorCount=1 -Xss256k
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: https://kh3t-discovery.onrender.com/eureka/
-      # Add GEMINI_API_KEY if needed here, otherwise it will be blank
+      - key: CATALOG_SERVICE_URL
+        value: https://kh3t-catalog-service.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://kh3t-order-service.onrender.com
+      - key: IDENTITY_SERVICE_URL
+        value: https://kh3t-identity-service.onrender.com
       - key: GEMINI_API_KEY
-        value: ""
+        sync: false
 
   - type: web
     name: kh3t-gateway

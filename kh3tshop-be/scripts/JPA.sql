@@ -2,6 +2,7 @@
 
 INSERT INTO customer (customer_id, full_name, phone_number, email, gender, date_of_birth, create_at, update_at, status)
 VALUES
+    (1, 'Pham Van Hinh', '0900000000', 'phamvanhinhstt8@gmail.com', 'MALE', '2004-01-01', '2025-01-01', '2025-01-01', 'ACTIVE'),
     (2, 'Leesin', '0911111111', 'leesin@example.com', 'MALE', '1998-03-14', '2024-10-01', '2024-10-01', 'ACTIVE'),
     (3, 'Erling Halland', '0903333444', 'halland@example.com', 'MALE', '2000-07-21', '2024-10-02', '2024-10-02', 'ACTIVE'),
     (4, 'Jeremy Doku', '0905555666', 'doku@example.com', 'MALE', '1995-10-12', '2024-10-03', '2024-10-03', 'ACTIVE'),
@@ -18,6 +19,7 @@ VALUES
 
 INSERT INTO account (login_id, create_at, password, role, status_login, update_at, username, customer_id)
 VALUES
+    (1, '2025-01-01', '$2b$10$hrgG.lh8Ym7ssRME.qAYUOSK9cWIME3Dc1Lx8a1O1NDyeAc/CfEQS', 'USER', 'ACTIVE', '2025-01-01', 'hinh123', 1),
     (2, '2024-10-01', '$2a$10$pdErrGmqR6k4c2cHmTVrCOoKtQmoR.frS.lAFbvU6e7/Cjbnt98Xi', 'USER', 'ACTIVE', '2024-10-01', 'Leesin', 2),
     (3, '2024-10-02', '$2a$10$UwU6c/qJC6Tg9/ySe5RYLOCtH3pTHzakrVAV0hjRfWzNVCe2kyJni','USER' , 'ACTIVE', '2024-10-02', 'Halland', 3),
     (4, '2024-10-03', '$2a$10$ezcfId8HGRycvLNNEQZdG.hLaSJ4xLvNoi0KRUkBU6tgu6vlKN2n2', 'USER', 'ACTIVE', '2024-10-03', 'Doku', 4),
@@ -26,7 +28,8 @@ VALUES
     (7, '2024-10-06', '$2a$10$asqFiSnfasSX4/g2fPID4ec9hxDWHbXDDTlN7FEwRpUjGz4itBlPm', 'USER', 'ACTIVE', '2024-10-06', 'CR7', 7),
     (8, '2024-10-07', '$2a$10$lzBHVSAD78l.eR/xM3IrEe2.iMhRwmuEXgSDrHSpJ0DoaojEMu3b2', 'USER', 'ACTIVE', '2024-10-07', 'Foden', 8),
     (9, '2024-10-08', '$2a$10$It2D4MaWB4Hq5PI9JyaUDu9.bscYWA7er6L3ZVv3B3FJl47ndvgH2', 'USER', 'LOCKED', '2024-10-08', 'Aguero', 9),
-    (10, '2024-10-09', '$2a$10$rL7cPLbyOKSb7x/ebJM3CuXvv5wC3Ksa6i6L9D.BCLwq0fg9gxRb.', 'STAFF', 'PENDING', '2024-10-09', 'Lionel Messi', 10);
+    (10, '2024-10-09', '$2a$10$rL7cPLbyOKSb7x/ebJM3CuXvv5wC3Ksa6i6L9D.BCLwq0fg9gxRb.', 'STAFF', 'PENDING', '2024-10-09', 'Lionel Messi', 10),
+    (11, '2025-01-01', '$2b$10$sRedRx0WzSnmAqRP1/Tn/e.6mHsdHT.Amoh287NnPU9Ddwi1I5F0i', 'ADMIN', 'ACTIVE', '2025-01-01', 'admin', NULL);
 
 
 

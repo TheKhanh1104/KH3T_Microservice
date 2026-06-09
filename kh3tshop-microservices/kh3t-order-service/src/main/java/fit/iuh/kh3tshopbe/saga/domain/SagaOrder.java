@@ -39,6 +39,9 @@ public class SagaOrder {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "customer_trading_id")
+    private Integer customerTradingId;
+
     @Column(name = "total_amount", nullable = false)
     private double totalAmount;
 

@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { toast } from "sonner";
 const Login = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const [formAuthentication, setFormAuthentication] = useState({
     username: "",
     password: "",
@@ -20,6 +21,8 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -51,6 +54,7 @@ const Login = () => {
           const userRole = decodedToken.scope;
 
           toast.success("Login successful!");
+          setIsLoading(false);
 
           // 5. Navigate based on user role
           if (userRole === "ADMIN") {
@@ -64,6 +68,7 @@ const Login = () => {
           }
         } else {
           toast.error("Login failed: Authentication token not received.");
+          setIsLoading(false);
         }
       } else {
         // If server returns error (e.g., wrong password), response.json() might still contain error info
@@ -77,12 +82,14 @@ const Login = () => {
         toast.error(
           `Login failed: ${errorData.message || "Please try again."}`
         );
+        setIsLoading(false);
       }
     } catch (error) {
       console.error("Network or unknown error:", error);
       toast.error(
         "An error occurred. Please check your network connection and try again."
       );
+      setIsLoading(false);
     }
   };
   return (
@@ -103,11 +110,12 @@ const Login = () => {
                 <input
                   type="text"
                   name="username"
-                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-400 transition"
+                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-400 transition disabled:bg-gray-100 disabled:text-gray-400"
                   value={formAuthentication.username}
                   onChange={handleChange}
                   placeholder="Username.........."
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -121,11 +129,12 @@ const Login = () => {
                 <input
                   type="password"
                   name="password"
-                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-400 transition"
+                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-400 transition disabled:bg-gray-100 disabled:text-gray-400"
                   value={formAuthentication.password}
                   onChange={handleChange}
                   placeholder="Password..........."
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -133,16 +142,25 @@ const Login = () => {
             <div className="flex gap-3 items-center mt-2 flex-wrap sm:flex-nowrap">
               <button
                 type="submit" // Đổi nút này thành submit cũng được, hoặc để onClick
-                className="px-6 py-2 rounded-lg bg-gray-400 text-white font-semibold hover:bg-gray-500 transition whitespace-nowrap"
+                className="px-6 py-2 rounded-lg bg-gray-400 text-white font-semibold hover:bg-gray-500 transition whitespace-nowrap disabled:opacity-50 flex items-center justify-center min-w-[90px]"
+                disabled={isLoading}
               >
-                Sign In
+                {isLoading ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  "Sign In"
+                )}
               </button>
               <button
                 type="button"
-                className="px-6 py-2 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition whitespace-nowrap"
+                className="px-6 py-2 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition whitespace-nowrap disabled:opacity-50"
                 onClick={() => {
                   navigate("/register");
                 }}
+                disabled={isLoading}
               >
                 Sign Up
               </button>
@@ -150,7 +168,7 @@ const Login = () => {
                 href="#"
                 className="text-gray-500 text-sm hover:text-gray-700 whitespace-nowrap sm:ml-auto"
                 onClick={() => {
-                  navigate("/forget_password");
+                  if (!isLoading) navigate("/forget_password");
                 }}
               >
                 Forget Password?
@@ -159,9 +177,20 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full py-4 rounded-lg bg-black text-white font-bold text-lg hover:bg-gray-800 transition mt-4"
+              className="w-full py-4 rounded-lg bg-black text-white font-bold text-lg hover:bg-gray-800 transition mt-4 disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center"
+              disabled={isLoading}
             >
-              LOG IN
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Đang đăng nhập...</span>
+                </div>
+              ) : (
+                "LOG IN"
+              )}
             </button>
             {/* KẾT THÚC THẺ FORM TẠI ĐÂY */}
           </form>

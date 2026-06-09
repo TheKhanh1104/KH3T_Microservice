@@ -23,19 +23,48 @@ public class AdminStatsFilter implements AiFilter {
         String role = (String) context.getMetadata().get("role");
         if (!"ADMIN".equals(role)) return;
 
-        context.appendSystemContext("Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.");
+        context.appendSystemContext(
+            "Bạn là Trợ lý CEO của KH3T Shop. Hãy trả lời cực kỳ chuyên nghiệp, có số liệu.\n" +
+            "Khi hiển thị danh sách sản phẩm, danh sách hàng hết/sắp hết, danh sách đơn hàng hoặc dữ liệu nhân viên, bạn BẮT BUỘC phải dùng định dạng BẢNG MARKDOWN (Markdown Table) (ví dụ: | STT | ID | Tên sản phẩm | Tồn kho | Giá bán | ... |) để người dùng dễ quan sát trực quan."
+        );
 
-        // Reusing the logic from your AdminChatController
+        // Append general revenue/order statistics
         String stats = generateAdminStats();
-        context.appendSystemContext("DỮ LIỆU THỐNG KÊ HIỆN TẠI:\n" + stats);
+        context.appendSystemContext("DỮ LIỆU THỐNG KÊ DOANH THU & ĐƠN HÀNG CHUNG:\n" + stats);
+
+        // Append detailed product inventory/stock
+        String stockInfo = getProductStockInfo();
+        context.appendSystemContext(stockInfo);
+
+        // Append detailed staff/employee info
+        String staffInfo = getStaffInfo();
+        context.appendSystemContext(staffInfo);
+
+        // Append detailed individual orders
+        String ordersInfo = getDetailedOrdersInfo();
+        context.appendSystemContext(ordersInfo);
     }
 
     private String generateAdminStats() {
-        LocalDate today = LocalDate.now();
+        List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
+
+        // Dynamically find the latest order date to use as the reporting anchor ("today")
+        LocalDate today = null;
+        for (Map<String, Object> order : detailedOrders) {
+            LocalDate orderDate = parseDate(order.get("date"));
+            if (orderDate != null) {
+                if (today == null || orderDate.isAfter(today)) {
+                    today = orderDate;
+                }
+            }
+        }
+        if (today == null) {
+            today = LocalDate.now();
+        }
+
         LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate sevenDaysAgo = today.minusDays(7);
 
-        List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
         double revenueToday = 0;
         double revenueLast7Days = 0;
         Map<LocalDate, Double> revenueByDay = new HashMap<>();
@@ -78,6 +107,66 @@ Top 5 sản phẩm bán chạy: %s
 Đơn bị hủy: %d
 """, revenueToday, revenueLast7Days, highestRevenueDay != null ? highestRevenueDay : "Chưa có", 
 highestRevenueAmount, String.join(", ", top5Products), pendingOrders, cancelledOrders);
+    }
+
+    private String money(double amount) { return String.format("%,.0fđ", amount); }
+
+    private String getProductStockInfo() {
+        try {
+            List<Map<String, Object>> products = shopDataService.getAllProducts();
+            StringBuilder sb = new StringBuilder("\nDỮ LIỆU KHO HÀNG & TỒN KHO SẢN PHẨM HỆ THỐNG:\n");
+            sb.append("| ID | Tên sản phẩm | Tồn kho | Giá bán | Form | Chất liệu |\n");
+            sb.append("|---|---|---|---|---|---|\n");
+            for (Map<String, Object> p : products) {
+                sb.append(String.format("| %s | %s | %s | %s | %s | %s |\n",
+                    text(p.get("id")), text(p.get("name")), text(p.get("quantity")), money(numberValue(p.get("price"))),
+                    text(p.get("form")), text(p.get("material"))));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải dữ liệu kho hàng: " + e.getMessage() + "]\n";
+        }
+    }
+
+    private String getStaffInfo() {
+        try {
+            List<Map<String, Object>> accounts = shopDataService.getAllAccounts();
+            StringBuilder sb = new StringBuilder("\nDỮ LIỆU NHÂN VIÊN & ACCOUNT STAFF HỆ THỐNG:\n");
+            sb.append("| Tên nhân viên | Username | Email | SĐT | Trạng thái |\n");
+            sb.append("|---|---|---|---|---|\n");
+            for (Map<String, Object> acc : accounts) {
+                String roleName = text(acc.get("role"));
+                if ("STAFF".equals(roleName)) {
+                    Map<String, Object> cust = (Map<String, Object>) acc.get("customer");
+                    String fullName = cust != null ? text(cust.get("fullName")) : "N/A";
+                    String email = cust != null ? text(cust.get("email")) : "N/A";
+                    String phone = cust != null ? text(cust.get("phoneNumber")) : "N/A";
+                    String status = text(acc.get("statusLogin"));
+                    sb.append(String.format("| %s | %s | %s | %s | %s |\n",
+                        fullName, text(acc.get("username")), email, phone, status));
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải danh sách nhân viên: " + e.getMessage() + "]\n";
+        }
+    }
+
+    private String getDetailedOrdersInfo() {
+        try {
+            List<Map<String, Object>> detailedOrders = shopDataService.getDetailedOrders();
+            StringBuilder sb = new StringBuilder("\nDANH SÁCH ĐƠN HÀNG CHI TIẾT ĐỂ BÁO CÁO:\n");
+            sb.append("| Mã Đơn | Tên Khách Hàng | Tổng tiền | PTTT | Trạng thái | Ngày đặt | Số lượng SP |\n");
+            sb.append("|---|---|---|---|---|---|---|\n");
+            for (Map<String, Object> order : detailedOrders) {
+                sb.append(String.format("| %s | %s | %s | %s | %s | %s | %s |\n",
+                    text(order.get("id")), text(order.get("customer")), money(numberValue(order.get("total"))),
+                    text(order.get("payment")), text(order.get("status")), text(order.get("date")), text(order.get("items"))));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "\n[Lỗi tải danh sách đơn hàng: " + e.getMessage() + "]\n";
+        }
     }
 
     private LocalDate parseDate(Object v) {

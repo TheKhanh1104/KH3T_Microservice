@@ -17,6 +17,7 @@ import java.util.UUID;
 public class OrderResponse {
     private UUID id;
     private UUID userId;
+    private fit.iuh.kh3tshopbe.entities.CustomerTrading customerTrading;
     private double totalAmount;
     private OrderStatus status;
     private LocalDateTime createdAt;

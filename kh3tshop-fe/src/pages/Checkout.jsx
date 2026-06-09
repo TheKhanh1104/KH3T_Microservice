@@ -54,6 +54,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [addresses, setAddresses] = useState([]);
+  const [isConfirming, setIsConfirming] = useState(false);
   const userId = location.state?.userId ?? localStorage.getItem("userId");
   const product = location.state?.product;
   const quantity = location.state?.quantity;
@@ -175,6 +176,8 @@ const Checkout = () => {
     }));
   };
   const handleConfirm = async () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
     try {
       if (payment === "") {
         toast.warning("Vui lòng chọn phương thức thanh toán!!!");
@@ -391,10 +394,58 @@ const Checkout = () => {
             // still remove cart because saga flow will handle items server-side
             localStorage.removeItem("cartItems");
           }
+
+          // ĐỒNG BỘ: Xóa toàn bộ các sản phẩm đã thanh toán thành công khỏi Database Cart
+          if (selectedCartItems.length > 0) {
+            try {
+              const cartRes = await fetch(`/api/carts/account/${resolvedUserId}`, {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              if (cartRes.ok) {
+                const cartData = await cartRes.json();
+                const cartId = cartData.result?.id;
+                if (cartId) {
+                  let totalDeletedPrice = 0;
+                  let totalDeletedQuantity = 0;
+
+                  // Xóa song song tất cả cart-details đã chọn
+                  const deletePromises = selectedCartItems.map((item) => {
+                    totalDeletedPrice += item.subtotal;
+                    totalDeletedQuantity += item.quantity;
+
+                    return fetch(`/api/cart-details/delete/${item.id}`, {
+                      method: "DELETE",
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                  });
+
+                  await Promise.all(deletePromises);
+
+                  // Gọi DUY NHẤT 1 LẦN cập nhật tổng số lượng và tiền của giỏ hàng
+                  await fetch(`/api/carts/update/${cartId}/delete`, {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ price: totalDeletedPrice, quantity: totalDeletedQuantity }),
+                  });
+                }
+              }
+            } catch (dbCartErr) {
+              console.error("Lỗi đồng bộ xóa giỏ hàng Database khi checkout:", dbCartErr);
+            }
+          }
         }
         // If we reach here and detailsOk is true, consider order successful
         if (detailsOk) {
-          toast.success("Order successful!!");
+          toast.success("Đặt hàng thành công! Cảm ơn bạn đã mua sắm tại KH3T Shop 🎉");
+          window.dispatchEvent(new Event("cartUpdated"));
         }
 
         if (payment === "bank") {
@@ -445,6 +496,8 @@ const Checkout = () => {
     } catch (error) {
       console.error("Error creating order:", error);
       toast.error("Failed to place order. Please try again.");
+    } finally {
+      setIsConfirming(false);
     }
   };
   const handleAddNewAddress = async () => {
@@ -711,9 +764,20 @@ const Checkout = () => {
 
         <button
           onClick={handleConfirm}
-          className="w-full mt-8 bg-black text-white py-3 rounded font-bold text-lg hover:bg-gray-800 transition"
+          disabled={isConfirming}
+          className="w-full mt-8 bg-black text-white py-3 rounded font-bold text-lg hover:bg-gray-800 transition disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Confirm Order
+          {isConfirming ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Đang đặt hàng...</span>
+            </>
+          ) : (
+            "Confirm Order"
+          )}
         </button>
       </div>
     </div>

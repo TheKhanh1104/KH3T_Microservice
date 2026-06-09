@@ -305,13 +305,46 @@ const ProductDetail = () => {
     }
     if (quantity < 1) return toast.warning("Quantity must be at least 1");
 
-    setIsAddedToCart(true);
-    toast.success("Added items, check your Cart!");
-    setTimeout(() => setIsAddedToCart(false), 2000);
-
     try {
       const token = localStorage.getItem("accessToken");
 
+      // BẢO VỆ AN TOÀN: Nếu chưa kịp load cart hoặc cart bị null, tự động fetch tại chỗ cực kỳ robust
+      let currentCart = cart;
+      if (!currentCart || !currentCart.id) {
+        const fetchRes = await fetch(`/api/carts/account/${user.id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (fetchRes.ok) {
+          const data = await fetchRes.json();
+          currentCart = data.result;
+          setCart(currentCart);
+        }
+      }
+
+      if (!currentCart || !currentCart.id) {
+        return toast.error("Giỏ hàng chưa khởi tạo xong, vui lòng thử lại sau giây lát!");
+      }
+
+      // 1. Cập nhật lạc quan giao diện NGAY LẬP TỨC (0ms)
+      const addedQty = parseInt(quantity);
+      const addedAmount = product.costPrice * addedQty;
+      const updatedCart = {
+        ...currentCart,
+        totalQuantity: (currentCart.totalQuantity || 0) + addedQty,
+        totalAmount: (currentCart.totalAmount || 0) + addedAmount
+      };
+      setCart(updatedCart);
+      localStorage.setItem("cachedCart", JSON.stringify(updatedCart));
+      window.dispatchEvent(new CustomEvent("cartUpdated", { detail: updatedCart }));
+
+      setIsAddedToCart(true);
+      toast.success("Added items, check your Cart!");
+      setTimeout(() => setIsAddedToCart(false), 2000);
+
+      // 2. Chạy ngầm các request API gửi lên server
       // Lấy sizeDetailId dựa trên selectedSize (sizeName)
       let sizeDetailId = null;
       if (hasSizes && selectedSize) {
@@ -319,47 +352,21 @@ const ProductDetail = () => {
         const sizeDetail = uniqueSizes.find(
           (size) => size.sizeName === selectedSize
         );
-        // Lưu ý: uniqueSizes đã được gộp quantity, sizeDetailId là id của 1 trong các sizeDetails
-        // Giả định backend có thể xử lý việc này nếu chỉ gửi sizeName hoặc productId + sizeName
-        // Nếu backend yêu cầu sizeDetailId cụ thể, cần fetch size detail dựa trên productId và sizeName
-
-        // **GIẢI QUYẾT CONFLICT:** Giữ lại logic tìm sizeDetailId chi tiết từ nhánh khác
-        const resSize = await fetch(
-          `/api/sizes/${selectedSize}`, // Giả định selectedSize là tên (S, M, L, XL)
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const size = await resSize.json();
-        const sizeIdToFind = size.id;
-        const productIdToFind = parseInt(id);
-        const resSizeDatail = await fetch(
-          `/api/size-details/find?productId=${productIdToFind}&sizeId=${sizeIdToFind}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const sizeDetailResponse = await resSizeDatail.json();
-        sizeDetailId = sizeDetailResponse.id; // Lấy sizeDetailId
+        if (sizeDetail) {
+          sizeDetailId = sizeDetail.id;
+        }
       }
 
       const dataSend = {
         productId: parseInt(id),
-        cartId: cart.id,
+        cartId: currentCart.id,
         quantity: quantity,
         // Chỉ thêm sizeDetailId nếu có size được chọn. Nếu không cần, backend sẽ tự xác định.
         // Cần đảm bảo backend xử lý được cả 2 trường hợp (có sizeDetailId hoặc không)
         ...(sizeDetailId && { sizeDetailId: sizeDetailId }),
       };
 
-      const res = await fetch(
+      await fetch(
         `/api/cart-details/add-to-cart`,
         {
           method: "POST",
@@ -371,14 +378,13 @@ const ProductDetail = () => {
         }
       );
 
-      // **GIẢI QUYẾT CONFLICT:** Giữ lại logic cập nhật cart totalAmount
       const cartRequest = {
-        quantity: parseInt(quantity),
+        quantity: addedQty,
         totalAmount: product.costPrice, // Dùng costPrice (giá sale)
       };
 
-      const resCart = await fetch(
-        `/api/carts/update/${cart.id}`,
+      await fetch(
+        `/api/carts/update/${currentCart.id}`,
         {
           method: "PUT",
           headers: {
@@ -388,10 +394,6 @@ const ProductDetail = () => {
           body: JSON.stringify(cartRequest),
         }
       );
-      if (resCart.ok) {
-        // Kích hoạt sự kiện để thông báo cập nhật giỏ hàng (ví dụ cho header cart icon)
-        window.dispatchEvent(new Event("cartUpdated"));
-      }
     } catch (error) {
       console.log("Lỗi thêm vào cart: ", error);
       toast.error("Failed to add to cart.");

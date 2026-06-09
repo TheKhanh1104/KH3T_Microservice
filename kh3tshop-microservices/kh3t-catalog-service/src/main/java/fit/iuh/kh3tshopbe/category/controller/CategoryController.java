@@ -7,6 +7,9 @@ import fit.iuh.kh3tshopbe.shared.dto.response.CategoryRevenueResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,10 +28,15 @@ public class CategoryController {
     CategoryService categoryService;
 
     @GetMapping
-    public ApiResponse<List<CategoryResponse>> getAllCategories() {
-        return ApiResponse.<List<CategoryResponse>>builder()
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
+        ApiResponse<List<CategoryResponse>> body = ApiResponse.<List<CategoryResponse>>builder()
                 .result(categoryService.getAllCategories())
                 .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,
+                        CacheControl.maxAge(300, java.util.concurrent.TimeUnit.SECONDS)
+                                    .cachePublic().getHeaderValue())
+                .body(body);
     }
 
     @GetMapping("/category-revenue")

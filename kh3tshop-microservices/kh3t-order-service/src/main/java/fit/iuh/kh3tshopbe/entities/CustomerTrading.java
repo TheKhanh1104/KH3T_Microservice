@@ -38,6 +38,7 @@ public class CustomerTrading {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToOne(mappedBy = "customerTrading", fetch = FetchType.LAZY)
     private Order order;
 

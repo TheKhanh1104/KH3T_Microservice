@@ -19,13 +19,11 @@ import java.util.Map;
 public class GeminiService {
 
     private static final List<String> FALLBACK_MODELS = List.of(
-            "google/gemma-4-31b-it:free",
-            "google/gemma-4-26b-a4b-it:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "deepseek/deepseek-v4-flash:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "openai/gpt-oss-20b:free"
-    );
+            "openrouter/free",
+            "meta-llama/llama-3.2-3b-instruct:free",
+            "meta-llama/llama-3.1-8b-instruct:free",
+            "qwen/qwen-2.5-7b-instruct:free",
+            "google/gemma-2-9b-it:free");
 
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
@@ -76,7 +74,7 @@ public class GeminiService {
     }
 
     public String generateText(String prompt) {
-        // Giữ lại phương thức này để không làm hỏng các code cũ nếu có, 
+        // Giữ lại phương thức này để không làm hỏng các code cũ nếu có,
         // nhưng bên trong sẽ gọi generateRawText
         if (prompt == null || prompt.isBlank()) {
             return "Em chưa nhận được câu hỏi, anh/chị vui lòng gửi lại nhé!";
@@ -89,9 +87,7 @@ public class GeminiService {
         Map<String, Object> requestBody = Map.of(
                 "model", model,
                 "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                )
-        );
+                        Map.of("role", "user", "content", prompt)));
 
         Map<String, Object> response = webClient.post()
                 .uri("/chat/completions")
@@ -102,21 +98,25 @@ public class GeminiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-            .retryWhen(Retry.backoff(3, Duration.ofSeconds(3))
-                .maxBackoff(Duration.ofSeconds(5))
-                .filter(this::isRetryableException))
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(3))
+                        .maxBackoff(Duration.ofSeconds(5))
+                        .filter(this::isRetryableException))
                 .block();
 
-        if (response == null || !response.containsKey("choices")) return null;
+        if (response == null || !response.containsKey("choices"))
+            return null;
 
         List<?> choices = (List<?>) response.get("choices");
-        if (choices == null || choices.isEmpty()) return null;
+        if (choices == null || choices.isEmpty())
+            return null;
 
         Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
-        if (firstChoice == null) return null;
+        if (firstChoice == null)
+            return null;
 
         Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
-        if (message == null) return null;
+        if (message == null)
+            return null;
 
         Object content = message.get("content");
         return content == null ? null : content.toString().trim();

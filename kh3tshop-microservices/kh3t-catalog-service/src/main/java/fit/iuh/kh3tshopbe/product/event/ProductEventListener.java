@@ -6,23 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/**
- * [OBSERVER PATTERN] — Lắng nghe các Domain Event của Product.
- *
- * Đây là trái tim của Observer pattern:
- * - ProductCommandService KHÔNG cần biết cache tồn tại
- * - Listener này tự động phản ứng với mọi thay đổi sản phẩm
- *
- * Ưu điểm so với code cũ (gọi evictProductsCache() trực tiếp):
- * ┌─────────────────────────────────────────────────────────┐
- * │  Trước: Command → [gọi trực tiếp] → CacheService       │
- * │  Sau:   Command → [publish event] → Listener → Cache   │
- * │                                   → Logger (tùy thêm)  │
- * │                                   → Kafka (tùy thêm)   │
- * └─────────────────────────────────────────────────────────┘
- *
- * Chỉ cần thêm @EventListener method mới để xử lý thêm side effects.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j

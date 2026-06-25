@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://kh3t-gateway.onrender.com/api/:path*"
+      "destination": "http://34.124.168.227:8080/api/:path*"
     },
     {
       "source": "/((?!api/).*)",

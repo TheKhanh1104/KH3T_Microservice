@@ -204,7 +204,33 @@ export default function Products({ initialFilter = 'ALL' }) {
     // 1. Lấy Token
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      alert("Vui lòng đăng nhập lại!");
+      toast.error("Vui lòng đăng nhập lại!");
+      return;
+    }
+
+    // --- KIỂM TRA HỢP LỆ TRƯỚC KHI GỬI (VALIDATION) ---
+    if (!formData.name || !formData.name.trim()) {
+      toast.warning("Tên sản phẩm không được để trống!");
+      return;
+    }
+    if (!formData.categoryId) {
+      toast.warning("Vui lòng chọn danh mục sản phẩm!");
+      return;
+    }
+    if (Number(formData.price) <= 0) {
+      toast.warning("Giá sản phẩm phải lớn hơn 0!");
+      return;
+    }
+    if (Number(formData.discountAmount) < 0 || Number(formData.discountAmount) > 100) {
+      toast.warning("Giảm giá phải nằm trong khoảng từ 0% đến 100%!");
+      return;
+    }
+    if (formData.imageUrlFront && formData.imageUrlFront.startsWith("data:image/")) {
+      toast.warning("Vui lòng nhập URL hình ảnh (bắt đầu bằng http/https), không sử dụng chuỗi Base64!");
+      return;
+    }
+    if (formData.imageUrlBack && formData.imageUrlBack.startsWith("data:image/")) {
+      toast.warning("Vui lòng nhập URL hình ảnh (bắt đầu bằng http/https), không sử dụng chuỗi Base64!");
       return;
     }
     // 2. Chuẩn bị URL và Method

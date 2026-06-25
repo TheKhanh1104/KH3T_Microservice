@@ -4,6 +4,7 @@ import {
   FaSearch, FaFilter, FaSortAmountDown
 } from "react-icons/fa";
 import AdminChatBot from '../../components/AdminChatBot';
+import { toast } from "sonner";
 export default function Products({ initialFilter = 'ALL' }) {
 
   const [products, setProducts] = useState([]);
@@ -268,15 +269,16 @@ export default function Products({ initialFilter = 'ALL' }) {
       });
 
       if (res.ok) {
+        toast.success(editingProduct ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!");
         setShowModal(false);
         loadProducts(); // Load lại danh sách sau khi lưu thành công
       } else {
-        const errorData = await res.json();
-        alert(`Lỗi: ${errorData.message || "Không thể lưu sản phẩm"}`);
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(`Lỗi: ${errorData.message || "Không thể lưu sản phẩm"}`);
       }
     } catch (error) {
       console.error("Lỗi kết nối:", error);
-      alert("Lỗi kết nối đến server");
+      toast.error("Lỗi kết nối đến server");
     }
 
   };
@@ -290,15 +292,25 @@ export default function Products({ initialFilter = 'ALL' }) {
   const deleteProduct = async (id) => {
     const token = localStorage.getItem("accessToken");
     if (!window.confirm("Bạn có chắc muốn xóa?")) return;
-    await fetch(`/api/products/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    loadProducts();
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        toast.success("Xóa sản phẩm thành công!");
+        loadProducts();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(`Xóa thất bại: ${errorData.message || "Lỗi từ server"}`);
+      }
+    } catch (error) {
+      console.error("Lỗi khi xóa:", error);
+      toast.error("Lỗi kết nối khi xóa sản phẩm");
+    }
   };
   const handleImport = (e) => { /* ... */ };
   const handleExport = () => {

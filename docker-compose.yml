@@ -43,6 +43,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=*"
     healthcheck:
       test: ["CMD-SHELL", "bash -lc 'echo ruok | nc localhost 2181 | grep imok'"]
       interval: 10s

@@ -63,9 +63,10 @@ export default function Customers() {
       if (!res.ok) throw new Error("Failed to load accounts");
       const data = await res.json();
 
-      setAccounts(data.result); // nếu response dạng ApiResponse
+      setAccounts(data?.result || []);
     } catch (err) {
       console.error(err);
+      setAccounts([]);
       alert("Lỗi khi tải danh sách tài khoản");
     } finally {
       setLoading(false);

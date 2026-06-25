@@ -76,7 +76,8 @@ const ProductDashboard = ({ onNavigate }) => {
       if (!response.ok) throw new Error("Failed");
       const data = await response.json();
       
-      const formatted = data.result.map((item, index) => ({
+      const actualList = data && Array.isArray(data.result) ? data.result : [];
+      const formatted = actualList.map((item, index) => ({
         ...item,
         revenueFormatted: formatCurrency(item.revenue),
         color: COLORS[index % COLORS.length] // Gán màu sắc
@@ -95,9 +96,15 @@ const ProductDashboard = ({ onNavigate }) => {
 
   const fetchTopProducts = async () => {
     try {
-      const res = await fetch(`/api/products/top-trending?type=${type}`);
+      const res = await fetch(`/api/products/top-trending?type=${type}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const data = await res.json();
-      setTopProducts(data);
+      const actualData = Array.isArray(data) ? data : (data && Array.isArray(data.result) ? data.result : []);
+      setTopProducts(actualData);
     } catch (error) {
       setTopProducts([]); // Fallback empty
     }
@@ -121,7 +128,12 @@ const ProductDashboard = ({ onNavigate }) => {
 
   const fetchProfit = async (filter) => {
     try {
-      const res = await fetch(`/api/invoices/${filter}`);
+      const res = await fetch(`/api/invoices/${filter}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const data = await res.json();
 
       const mapDayToEN = (dayEn) => {
@@ -129,7 +141,8 @@ const ProductDashboard = ({ onNavigate }) => {
         return days[dayEn] || dayEn;
       };
 
-      const formatted = data.map((item) => {
+      const actualData = Array.isArray(data) ? data : (data && Array.isArray(data.result) ? data.result : []);
+      const formatted = actualData.map((item) => {
         let rawValue = typeof item.profit === 'string' ? parseFloat(item.profit.replace(/,/g, '')) : item.profit;
         let displayName = filter === "week" ? mapDayToEN(item.day) : (filter === "month" ? `M${item.month}` : `${item.year}`);
         

@@ -156,42 +156,53 @@ export default function Products({ initialFilter = 'ALL' }) {
 
   };
 
-  const openEditModal = (product) => {
-    setEditingProduct(product);
-    // Tìm ID danh mục để bind vào thẻ <select>
-    // Giả sử product.category là object { id, name... } trả về từ API lấy danh sách
-    const catId = product.category?.id || product.categoryRequest?.id || "";
+  const openEditModal = async (product) => {
+    try {
+      const res = await fetch(`/api/products/${product.id}`);
+      if (!res.ok) throw new Error("Failed to load details");
+      const resultData = await res.json();
+      const fullProduct = resultData?.result;
 
-    // Map sizeDetails (API) -> Form State
-    // API trả về: [{ quantity: 20, sizeName: "M" }, ...] (hoặc cấu trúc tương tự)
-    // Form cần: [{ nameSize: "M", quantity: 20 }] để dễ hiển thị trên input
-    const mappedSizes = product.sizeDetails
-      ? product.sizeDetails.map(s => ({
-        nameSize: s.sizeName || s.sizeRequest?.nameSize || "",
-        quantity: s.quantity
-      }))
-      : [];
+      if (!fullProduct) {
+        toast.error("Không thể tải chi tiết sản phẩm!");
+        return;
+      }
 
-    setFormData({
-      name: product.name,
-      description: product.description || "",
-      categoryId: catId,
-      price: product.price,
-      costPrice: product.costPrice || 0, // Nếu backend không trả về thì để 0
-      unit: product.unit || "Cái",
-      imageUrlFront: product.imageUrlFront || "",
-      imageUrlBack: product.imageUrlBack || "",
-      discountAmount: product.discountAmount || 0,
-      material: product.material || "",
-      form: product.form || "",
-      status: product.status || "",
-      quantity: product.quantity, // Tổng tồn kho
+      setEditingProduct(fullProduct);
+      // Tìm ID danh mục để bind vào thẻ <select>
+      const catId = fullProduct.category?.id || fullProduct.categoryRequest?.id || "";
 
-      // Lưu vào state dùng cho việc render input
-      sizeDetails: mappedSizes
-    });
-    setShowModal(true);
+      // Map sizeDetails (API) -> Form State
+      const mappedSizes = fullProduct.sizeDetails
+        ? fullProduct.sizeDetails.map(s => ({
+          nameSize: s.sizeName || s.sizeRequest?.nameSize || "",
+          quantity: s.quantity
+        }))
+        : [];
 
+      setFormData({
+        name: fullProduct.name,
+        description: fullProduct.description || "",
+        categoryId: catId,
+        price: fullProduct.price,
+        costPrice: fullProduct.costPrice || 0,
+        unit: fullProduct.unit || "Cái",
+        imageUrlFront: fullProduct.imageUrlFront || "",
+        imageUrlBack: fullProduct.imageUrlBack || "",
+        discountAmount: fullProduct.discountAmount || 0,
+        material: fullProduct.material || "",
+        form: fullProduct.form || "",
+        status: fullProduct.status || "",
+        quantity: fullProduct.quantity, // Tổng tồn kho
+
+        // Lưu vào state dùng cho việc render input
+        sizeDetails: mappedSizes
+      });
+      setShowModal(true);
+    } catch (err) {
+      console.error("Lỗi khi tải chi tiết sản phẩm:", err);
+      toast.error("Lỗi khi tải chi tiết sản phẩm!");
+    }
   };
 
   const updateSizeDetail = (index, field, value) => {
@@ -351,9 +362,23 @@ export default function Products({ initialFilter = 'ALL' }) {
     a.click();
   };
 
-  const openDetailModal = (product) => {
-    setDetailProduct(product);
-    setShowDetailModal(true);
+  const openDetailModal = async (product) => {
+    try {
+      const res = await fetch(`/api/products/${product.id}`);
+      if (!res.ok) throw new Error("Failed to load details");
+      const resultData = await res.json();
+      const fullProduct = resultData?.result;
+
+      if (!fullProduct) {
+        toast.error("Không thể tải chi tiết sản phẩm!");
+        return;
+      }
+      setDetailProduct(fullProduct);
+      setShowDetailModal(true);
+    } catch (err) {
+      console.error("Lỗi khi tải chi tiết sản phẩm:", err);
+      toast.error("Lỗi khi tải chi tiết sản phẩm!");
+    }
   };
 
   const getCategoryColor = (categoryName) => {

@@ -243,13 +243,11 @@ export default function Products({ initialFilter = 'ALL' }) {
     // Tìm object category gốc từ list 'categories' dựa trên ID đang chọn trong form
     const selectedCategory = categories.find(c => c.id == formData.categoryId);
 
-    // Tạo object categoryRequest theo đúng mẫu JSON yêu cầu
+    // Tạo object categoryRequest theo đúng mẫu JSON yêu cầu (phù hợp tuyệt đối với CategoryRequest.java)
     const categoryRequestData = selectedCategory ? {
       name: selectedCategory.name,
       description: selectedCategory.description || "",
-      imageUrl: selectedCategory.imageUrl || "",
-      display_order: selectedCategory.display_order || 1,
-      isActive: true
+      imageUrl: selectedCategory.imageUrl || ""
     } : null;
 
     // 4. Xử lý SizeDetailRequests
@@ -261,7 +259,7 @@ export default function Products({ initialFilter = 'ALL' }) {
       }
     }));
 
-    // 5. Tạo Payload cuối cùng
+    // 5. Tạo Payload cuối cùng (phù hợp tuyệt đối với ProductRequest.java)
     const payload = {
       // Nếu là Sửa thì giữ nguyên ID, Thêm mới thì ID = 0 (hoặc backend tự sinh)
       id: editingProduct ? editingProduct.id : 0,
@@ -270,7 +268,6 @@ export default function Products({ initialFilter = 'ALL' }) {
       description: formData.description,
       price: Number(formData.price),
       unit: formData.unit,
-      quantity: Number(formData.quantity), // Tổng số lượng (nếu cần gửi)
 
       imageUrlFront: formData.imageUrlFront,
       imageUrlBack: formData.imageUrlBack,

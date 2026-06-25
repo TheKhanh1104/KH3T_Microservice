@@ -21,6 +21,10 @@ export default function Products({ initialFilter = 'ALL' }) {
   const [filterStatus, setFilterStatus] = useState("ALL");     // Lọc theo trạng thái
   const [sortOption, setSortOption] = useState("newest");      // Sắp xếp
 
+  // === STATE PHÂN TRANG ===
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -54,6 +58,32 @@ export default function Products({ initialFilter = 'ALL' }) {
     loadProducts();
     loadCategories();
   }, []);
+
+  // Tự động tính toán giá sau giảm (costPrice) khi nhập giá gốc hoặc phần trăm giảm giá
+  useEffect(() => {
+    const price = Number(formData.price || 0);
+    const discount = Number(formData.discountAmount || 0);
+    const calculatedCost = price - (price * discount / 100);
+    setFormData(prev => ({ ...prev, costPrice: calculatedCost }));
+  }, [formData.price, formData.discountAmount]);
+
+  // Tự động tính toán tổng tồn kho từ các size
+  useEffect(() => {
+    if (formData.sizeDetails && formData.sizeDetails.length > 0) {
+      const totalQty = formData.sizeDetails.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      setFormData(prev => {
+        if (prev.quantity !== totalQty) {
+          return { ...prev, quantity: totalQty };
+        }
+        return prev;
+      });
+    }
+  }, [formData.sizeDetails]);
+
+  // Reset trang về 1 khi thay đổi điều kiện lọc hoặc tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCategory, filterStatus, filterStock]);
 
   const loadProducts = async () => {
     try {
@@ -347,6 +377,13 @@ export default function Products({ initialFilter = 'ALL' }) {
       }
     });
 
+  // --- LOGIC PHÂN TRANG ---
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -459,9 +496,9 @@ export default function Products({ initialFilter = 'ALL' }) {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {/* LƯU Ý: Dùng filteredProducts thay vì products */}
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((p) => (
+                {/* LƯU Ý: Dùng paginatedProducts đã phân trang */}
+                {paginatedProducts.length > 0 ? (
+                  paginatedProducts.map((p) => (
                     <tr key={p.id} className="hover:bg-blue-50/50 transition-colors duration-200">
 
                       {/* Name */}
@@ -533,6 +570,86 @@ export default function Products({ initialFilter = 'ALL' }) {
             </table>
           </div>
         </div>
+
+        {/* === PAGINATION === */}
+        {totalItems > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-500 font-medium">
+              Hiển thị <span className="font-semibold text-gray-700">{totalItems === 0 ? 0 : startIndex + 1}</span> - <span className="font-semibold text-gray-700">{endIndex}</span> trong tổng số <span className="font-semibold text-gray-700">{totalItems}</span> sản phẩm
+            </div>
+            
+            <div className="flex items-center gap-6 flex-wrap">
+              {/* Items Per Page Select */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 font-medium">Số dòng mỗi trang:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-700 outline-none cursor-pointer hover:border-gray-300 transition-colors bg-white"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              {/* Page Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
+                    currentPage === 1
+                      ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 active:scale-95"
+                  }`}
+                >
+                  Trước
+                </button>
+
+                {/* Page numbers list */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                  })
+                  .map((page, index, array) => {
+                    const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsis && <span className="text-gray-400 px-1">...</span>}
+                        <button
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 rounded-xl text-sm font-bold border transition-all duration-200 ${
+                            currentPage === page
+                              ? "bg-linear-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20 scale-105"
+                              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 active:scale-95"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${
+                    currentPage === totalPages
+                      ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 active:scale-95"
+                  }`}
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* DETAIL MODAL */}
         {showDetailModal && detailProduct && (
@@ -800,7 +917,7 @@ export default function Products({ initialFilter = 'ALL' }) {
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                     <div>
-                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giá vốn (VNĐ)</label>
+                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giá bán gốc (VNĐ)</label>
                       <input
                         type="number"
                         className="w-full border-2 border-blue-300 p-3 rounded-xl font-semibold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200"
@@ -809,33 +926,32 @@ export default function Products({ initialFilter = 'ALL' }) {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giá bán (VNĐ)</label>
+                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giá bán sau giảm (Tự động tính) (VNĐ)</label>
                       <input
                         type="number"
-                        className="w-full border-2 border-gray-300 p-3 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200"
+                        className="w-full border-2 border-gray-300 p-3 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200 font-semibold"
                         value={formData.costPrice}
-                        onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })}
                         disabled
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giảm giá (Số tiền)</label>
+                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Giảm giá (%)</label>
                       <input
                         type="number"
+                        placeholder="0 - 100"
                         className="w-full border-2 border-red-300 p-3 rounded-xl text-red-600 font-semibold focus:ring-2 focus:ring-red-500 outline-none transition-all duration-200"
                         value={formData.discountAmount}
                         onChange={(e) => setFormData({ ...formData, discountAmount: Number(e.target.value) })}
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Tổng tồn kho</label>
+                      <label className="text-xs text-gray-600 font-bold uppercase mb-2 block">Tổng tồn kho (Tự động cộng dồn)</label>
                       <input
                         type="number"
-                        className="w-full border-2 border-gray-300 p-3 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200"
+                        className="w-full border-2 border-gray-300 p-3 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200 font-semibold"
                         value={formData.quantity}
                         readOnly
-                        title="Tự động tính tổng từ các size bên dưới (nếu logic yêu cầu) hoặc nhập tay"
-                        onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                        title="Tự động tính tổng từ các size bên dưới"
                       />
                     </div>
                   </div>
